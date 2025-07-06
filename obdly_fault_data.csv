@@ -1,0 +1,11 @@
+Make,Model,Year,Fault,Suggested Fix,Urgency,Warning Light?
+Ford,Fiesta,2015,Engine shaking at idle,Check engine mounts and spark plugs,Medium,Yes
+Ford,Fiesta,2015,Brake noise,Inspect brake pads and discs for wear,High,Yes
+Vauxhall,Corsa,2016,Dashboard warning light (spanner),Check oil levels and service schedule,Medium,Yes
+Volkswagen,Golf,2018,Car pulls to one side,Check wheel alignment and tyre pressure,Low,No
+BMW,3 Series,2017,Battery warning light,Check alternator and battery connections,High,Yes
+Nissan,Qashqai,2014,Turbo lag,Inspect turbocharger and vacuum lines,Medium,No
+Audi,A3,2019,Clunk noise when turning,Check CV joints or suspension components,Medium,No
+Toyota,Yaris,2013,Overheating,Check coolant level and radiator fan,High,Yes
+Peugeot,208,2015,Jerky acceleration,Inspect fuel injectors or throttle body,Medium,No
+Hyundai,i30,2020,ABS warning light,"Scan for ABS fault codes, check sensors",High,Yes
