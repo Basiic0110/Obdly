@@ -3,48 +3,81 @@ import os
 import csv
 import json
 import requests
-import xml.etree.ElementTree as ET
 from datetime import datetime
 from openai import OpenAI
 
+print("✅ DVLA KEY in use:", os.environ.get("DVLA_KEY"))
+
 # --- PAGE SETUP ---
-st.set_page_config(page_title="OBDly - AI Car Assistant", page_icon="🚗", layout="centered")
+st.set_page_config(page_title="OBDly - AI Car Assistant",
+                   page_icon="🚗",
+                   layout="centered")
 st.title("🚗 OBDly - Find & Fix Car Problems")
-st.markdown("Quick answers for car problems. UK reg lookup + smart suggestions.")
+st.markdown(
+    "Quick answers for car problems. UK reg lookup + smart suggestions.")
 
 # --- OPENAI CLIENT ---
 client = OpenAI(api_key=os.environ.get("OBDLY_key2"))
 
 # --- SIDEBAR MENU ---
 st.sidebar.title("📑 OBDly Menu")
-menu = st.sidebar.radio("Choose an option", ["🔧 Diagnose a Car", "📑 View Previous Queries"])
+menu = st.sidebar.radio("Choose an option",
+                        ["🔧 Diagnose a Car", "📑 View Previous Queries"])
+
 
 # --- FUNCTIONS ---
-def get_car_info_from_reg(reg_number):
-    api_key = os.environ.get("REGCHECK_KEY")
-    url = f"https://www.regcheck.org.uk/api/reg.asmx/Check?RegistrationNumber={reg_number}&username={api_key}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        try:
-            root = ET.fromstring(response.text)
-            ns = {"ns": "http://regcheck.org.uk"}
-            vehicle_json_str = root.findtext("ns:vehicleJson", namespaces=ns)
-            if vehicle_json_str:
-                vehicle_data = json.loads(vehicle_json_str)
-                make = vehicle_data.get("Make", "").lower()
-                model = vehicle_data.get("Model", "").lower()
-                if not make or not model:
-                    desc = vehicle_data.get("Description", "").lower().split()
-                    if len(desc) >= 2:
-                        make, model = desc[0], desc[1]
-                return {
-                    "make": make,
-                    "model": model,
-                    "year": str(vehicle_data.get("RegistrationYear", ""))
-                }
-        except Exception:
-            pass
+def get_car_info_from_dvla(reg_number):
+    api_key = os.environ.get("DVLA_KEY")
+    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
+    data = {"registrationNumber": reg_number}
+    try:
+        response = requests.post(
+            "https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles",
+            headers=headers,
+            json=data)
+
+        # Debug logs
+        print("🔍 DVLA Response Code:", response.status_code)
+        print("📦 DVLA Response Body:", response.text)
+        print("🛠 Request Headers:", headers)
+        print("🛠 Request Body:", data)
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 403:
+            st.error(
+                "DVLA API access denied (403). Check if you're using a test key or wrong endpoint."
+            )
+        else:
+            st.warning(f"DVLA API error: {response.status_code}")
+    except Exception as e:
+        st.warning(f"DVLA API call failed: {str(e)}")
     return None
+
+
+def display_car_details(vehicle):
+    with st.expander("📋 Full Vehicle Details"):
+        st.markdown(f"""
+        **Make:** {vehicle.get('make', 'N/A').title()}  
+        **Model:** {vehicle.get('model', 'N/A').title()}  
+        **Year:** {vehicle.get('yearOfManufacture', 'N/A')}  
+        **Colour:** {vehicle.get('colour', 'N/A').title()}  
+        **Fuel Type:** {vehicle.get('fuelType', 'N/A')}  
+        **Engine Capacity:** {vehicle.get('engineCapacity', 'N/A')}cc  
+        **CO2 Emissions:** {vehicle.get('co2Emissions', 'N/A')} g/km  
+        **Tax Status:** {vehicle.get('taxStatus', 'N/A')}  
+        **Tax Due Date:** {vehicle.get('taxDueDate', 'N/A')}  
+        **MOT Status:** {vehicle.get('motStatus', 'N/A')}  
+        **MOT Expiry Date:** {vehicle.get('motExpiryDate', 'N/A')}  
+        **Registration Number:** {vehicle.get('registrationNumber', 'N/A')}  
+        **Type Approval:** {vehicle.get('typeApproval', 'N/A')}  
+        **Export Marked:** {vehicle.get('markedForExport', 'N/A')}  
+        **Date of Last V5C Issued:** {vehicle.get('dateOfLastV5CIssued', 'N/A')}  
+        **Revenue Weight:** {vehicle.get('revenueWeight', 'N/A')} kg  
+        **Wheelplan:** {vehicle.get('wheelplan', 'N/A')}  
+        **First Registration Month:** {vehicle.get('monthOfFirstRegistration', 'N/A')}
+        """)
+
 
 def load_fault_data():
     faults = []
@@ -57,12 +90,14 @@ def load_fault_data():
         pass
     return faults
 
+
 def find_fix_from_csv(user_input, faults):
     user_words = set(user_input.lower().split())
     best_match = None
     highest_overlap = 0
     for row in faults:
-        row_text = f"{row['Make']} {row['Model']} {row['Year']} {row['Fault']}".lower()
+        row_text = f"{row['Make']} {row['Model']} {row['Year']} {row['Fault']}".lower(
+        )
         row_words = set(row_text.split())
         overlap = len(user_words & row_words)
         if overlap > highest_overlap and overlap >= 3:
@@ -77,31 +112,37 @@ def find_fix_from_csv(user_input, faults):
 **Warning Light:** {best_match['Warning Light?']}"""
     return None
 
+
 def ask_obdly_ai(prompt):
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a top-rated car repair assistant. Help in simple English."},
-                {"role": "user", "content": prompt}
-            ]
-        )
+            messages=[{
+                "role":
+                "system",
+                "content":
+                "You are a top-rated car repair assistant. Help in simple English."
+            }, {
+                "role": "user",
+                "content": prompt
+            }])
         return response.choices[0].message.content
     except:
         return "Sorry, OBDly AI couldn’t respond at this time."
+
 
 def log_query(reg, issue, source, response):
     with open("query_log.csv", mode='a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         if f.tell() == 0:
-            writer.writerow(["Timestamp", "Reg", "Issue", "Source", "Response"])
+            writer.writerow(
+                ["Timestamp", "Reg", "Issue", "Source", "Response"])
         writer.writerow([
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            reg or "N/A",
-            issue,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"), reg or "N/A", issue,
             source,
             response.strip().replace("\n", " ")
         ])
+
 
 def view_log():
     if not os.path.exists("query_log.csv"):
@@ -117,10 +158,10 @@ def view_log():
 
     st.markdown("### 🧾 Previous Queries")
 
-    # --- Filters ---
     col1, col2 = st.columns(2)
     with col1:
-        reg_filter = st.text_input("🔍 Filter by reg plate (leave blank to skip)").lower()
+        reg_filter = st.text_input(
+            "🔍 Filter by reg plate (leave blank to skip)").lower()
     with col2:
         issue_filter = st.text_input("🔎 Keyword in issue (optional)").lower()
 
@@ -130,9 +171,13 @@ def view_log():
     if reg_filter:
         results = [row for row in results if reg_filter in row["Reg"].lower()]
     if issue_filter:
-        results = [row for row in results if issue_filter in row["Issue"].lower()]
+        results = [
+            row for row in results if issue_filter in row["Issue"].lower()
+        ]
     if source_filter != "All":
-        results = [row for row in results if row["Source"].upper() == source_filter]
+        results = [
+            row for row in results if row["Source"].upper() == source_filter
+        ]
 
     if not results:
         st.info("No matching queries.")
@@ -145,18 +190,23 @@ def view_log():
         st.markdown(f"**Response:** {row['Response'][:200]}...\n")
         st.markdown("---")
 
+
 # --- MAIN LOGIC ---
 if menu == "🔧 Diagnose a Car":
     faults = load_fault_data()
-    mode = st.radio("How would you like to begin?", ["Enter UK Registration Plate", "Describe the Issue"])
+    mode = st.radio("How would you like to begin?",
+                    ["Enter UK Registration Plate", "Describe the Issue"])
     reg, issue = "", ""
 
     if mode == "Enter UK Registration Plate":
         reg = st.text_input("Enter your reg plate (e.g. YH13ABC)")
         if reg:
-            car = get_car_info_from_reg(reg)
-            if car:
-                st.success(f"Found: {car['make'].title()} {car['model'].title()} {car['year']}")
+            vehicle = get_car_info_from_dvla(reg)
+            if vehicle:
+                st.success(
+                    f"Found: {vehicle['make'].title()} {vehicle.get('model', '').title()} {vehicle.get('yearOfManufacture', '')} ({vehicle.get('colour', '').title()})"
+                )
+                display_car_details(vehicle)
                 issue = st.text_input("Describe the issue")
             else:
                 st.warning("Car not found. Try manual issue mode.")
@@ -164,7 +214,8 @@ if menu == "🔧 Diagnose a Car":
         issue = st.text_input("Describe your car issue")
 
     if st.button("🔧 Diagnose Now") and issue:
-        user_input = f"{car['make']} {car['model']} {car['year']} {issue}" if reg and 'car' in locals() else issue
+        user_input = f"{vehicle.get('make', '')} {vehicle.get('model', '')} {vehicle.get('yearOfManufacture', '')} {issue}" if reg and 'vehicle' in locals(
+        ) else issue
         csv_result = find_fix_from_csv(user_input, faults)
         if csv_result:
             st.success(csv_result)
