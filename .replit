@@ -3,6 +3,7 @@ modules = ["python-3.11"]
 
 [nix]
 channel = "stable-24_05"
+packages = ["glibcLocales"]
 
 [unitTest]
 language = "python3"
@@ -77,3 +78,6 @@ externalPort = 8081
 [[ports]]
 localPort = 8512
 externalPort = 9000
+
+[agent]
+expertMode = true

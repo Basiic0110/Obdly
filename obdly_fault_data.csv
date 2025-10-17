@@ -1,11 +1,94 @@
-Make,Model,Year,Fault,Suggested Fix,Urgency,Warning Light?
-Ford,Fiesta,2015,Engine shaking at idle,Check engine mounts and spark plugs,Medium,Yes
-Ford,Fiesta,2015,Brake noise,Inspect brake pads and discs for wear,High,Yes
-Vauxhall,Corsa,2016,Dashboard warning light (spanner),Check oil levels and service schedule,Medium,Yes
-Volkswagen,Golf,2018,Car pulls to one side,Check wheel alignment and tyre pressure,Low,No
-BMW,3 Series,2017,Battery warning light,Check alternator and battery connections,High,Yes
-Nissan,Qashqai,2014,Turbo lag,Inspect turbocharger and vacuum lines,Medium,No
-Audi,A3,2019,Clunk noise when turning,Check CV joints or suspension components,Medium,No
-Toyota,Yaris,2013,Overheating,Check coolant level and radiator fan,High,Yes
-Peugeot,208,2015,Jerky acceleration,Inspect fuel injectors or throttle body,Medium,No
-Hyundai,i30,2020,ABS warning light,"Scan for ABS fault codes, check sensors",High,Yes
+Make,Model,Year,Fault,Suggested Fix,Urgency,Warning Light?,Cost Estimate,Difficulty,User Reports
+Ford,Focus,2015-2019,Lumpy transmission when shifting gears,Check and replace transmission fluid. Common issue with PowerShift gearbox - may need clutch replacement if severe,Medium,No,£150-800,Professional,47
+Ford,Fiesta,2013-2017,Engine juddering at low speeds,PowerShift dual-clutch issue. Update transmission software at dealer. Severe cases need clutch pack replacement,Medium,Yes,£200-1200,Professional,89
+Vauxhall,Corsa,2014-2020,EML light on with loss of power,Common issue with throttle body. Clean throttle body or replace if faulty. Check for error codes first,Medium,Yes,£80-300,Intermediate,34
+Vauxhall,Astra,2015-2019,Timing chain rattle on cold start,Timing chain stretch - needs replacement urgently to prevent engine damage,High,No,£600-1200,Professional,56
+BMW,3 Series,2012-2018,Turbo whistling noise,Turbo failing or boost leak. Check all intercooler hoses for splits. May need turbo replacement,Medium,Yes,£150-2000,Professional,28
+BMW,X5,2014-2020,Suspension clunking over bumps,Worn front suspension bushes or drop links. Common wear item on BMWs,Low,No,£100-400,Intermediate,41
+Volkswagen,Golf,2013-2019,DSG gearbox jerking,DSG mechatronic unit fault. Requires software update or mechatronic replacement,High,Yes,£200-3500,Professional,67
+Volkswagen,Polo,2015-2021,Windows not working,Common issue with window regulators. Replace faulty regulator and check fuse,Low,No,£120-280,Intermediate,23
+Mercedes,C Class,2014-2020,Engine won't start - clicking noise,Weak battery or faulty starter motor. Test battery first - often just needs replacement,Medium,No,£80-450,DIY/Intermediate,52
+Mercedes,E Class,2016-2021,Air suspension warning light,Air suspension compressor failure or airbag leak. Diagnose with STAR diagnostics,Medium,Yes,£400-2000,Professional,19
+Audi,A4,2013-2018,Oil consumption excessive,PCV valve failure or piston ring wear. Check PCV valve first - cheap fix,Medium,Yes,£60-1500,Intermediate,44
+Audi,A3,2014-2020,Emissions workshop light,DPF regeneration needed or EGR valve fault. Try motorway drive first to regenerate DPF,Medium,Yes,£0-1200,Intermediate,71
+Nissan,Qashqai,2014-2019,Clutch juddering,DMF (Dual Mass Flywheel) worn. Needs clutch kit and flywheel replacement,Medium,No,£600-1000,Professional,38
+Nissan,Juke,2015-2020,CVT transmission whining,CVT fluid degraded or transmission bearing failure. Change CVT fluid first,Medium,No,£150-2500,Professional,29
+Toyota,Yaris,2014-2021,Hybrid battery warning,12V auxiliary battery weak - not main hybrid battery. Replace 12V battery,Medium,Yes,£100-200,DIY,15
+Toyota,Corolla,2019-2024,Brake pedal feels soft,Air in brake system or brake fluid needs changing. Bleed brakes and check for leaks,High,Yes,£60-200,Intermediate,22
+Honda,Civic,2015-2021,Air con not cold,Refrigerant leak or compressor failure. Regas first - may need leak repair,Low,No,£60-600,Professional,46
+Honda,CR-V,2017-2022,Engine management light - misfire,Ignition coil or spark plug failure. Replace spark plugs and faulty coil,Medium,Yes,£80-250,Intermediate,33
+Mini,Cooper,2014-2020,Engine overheating,Thermostat stuck closed or water pump failure. Check coolant level first,High,Yes,£100-600,Professional,27
+Mini,Countryman,2016-2021,Loud whirring from engine bay,Electric water pump failing - common Mini issue. Replace before complete failure,Medium,No,£200-450,Professional,31
+Range Rover,Evoque,2015-2020,Transfer case fault warning,Transfer case actuator motor failure. Common issue - needs replacement,Medium,Yes,£400-1200,Professional,18
+Land Rover,Discovery,2017-2022,Air suspension dropping overnight,Air suspension leak - check bags and airlines for damage,Low,Yes,£200-800,Professional,24
+Peugeot,208,2015-2020,Electrical faults - random warnings,Body control module issue or poor earth connection. Check battery terminals and earths first,Medium,Yes,£0-500,Intermediate,36
+Peugeot,3008,2016-2021,AdBlue warning light,AdBlue system fault or sensor issue. Top up AdBlue first - may need injector cleaning,Medium,Yes,£15-600,Intermediate,42
+Renault,Clio,2013-2019,Stop light and SERV light on,Multiple possible causes - alternator, battery or sensor fault. Needs diagnostic scan,Medium,Yes,£80-400,Professional,53
+Renault,Megane,2016-2020,Keycard not detected,Keycard battery flat or reader fault. Replace keycard battery first,Low,Yes,£8-150,DIY,61
+Mazda,CX-5,2015-2021,Diesel engine in limp mode,DPF blocked - needs regeneration or replacement,Medium,Yes,£0-1200,Professional,26
+Mazda,3,2014-2019,Suspension clonking,Anti-roll bar links worn - very common issue,Low,No,£60-150,Intermediate,39
+Volvo,XC60,2017-2023,Start/stop not working,Battery not charged enough or sensor fault. Check battery health,Low,No,£80-300,Intermediate,17
+Volvo,V40,2014-2018,Coolant warning light,Coolant level sensor or actual coolant leak. Check expansion tank for cracks,Medium,Yes,£20-200,DIY/Intermediate,29
+Skoda,Octavia,2015-2020,DSG gearbox warning,Mechatronic unit or clutch pack fault. Needs specialist diagnostics,High,Yes,£200-3000,Professional,48
+Skoda,Superb,2016-2022,DPF warning light flashing,DPF regeneration interrupted or sensor fault. Complete a motorway drive,Medium,Yes,£0-1200,Intermediate,35
+Seat,Leon,2014-2019,Coil pack failure - engine shaking,Ignition coil failed - replace all coils and spark plugs,Medium,Yes,£120-300,Intermediate,43
+Seat,Ibiza,2015-2021,Dashboard lights flickering,Alternator failing or poor battery connection. Test alternator output,Medium,No,£100-450,Professional,31
+Kia,Sportage,2016-2022,Engine knocking noise,Timing chain tensioner or low oil level. Check oil immediately,High,No,£50-900,Professional,22
+Kia,Picanto,2015-2020,Battery keeps going flat,Alternator not charging or parasitic drain. Test alternator and check for drains,Medium,No,£80-350,Intermediate,28
+Hyundai,Tucson,2018-2023,Turbo underboost error,Boost leak or turbo actuator fault. Check all hoses and intercooler,Medium,Yes,£100-1500,Professional,19
+Hyundai,i30,2015-2020,Clutch slip when accelerating,Clutch worn or contaminated with oil. Check for oil leaks then replace clutch,Medium,No,£400-800,Professional,37
+Citroen,C3,2016-2021,ABS and traction control lights,Wheel speed sensor failure. Clean sensors or replace faulty one,Medium,Yes,£50-180,Intermediate,32
+Citroen,C4,2015-2019,Turbo failure - black smoke,Turbo oil seals failed or boost control issue. Needs turbo replacement,High,Yes,£800-2000,Professional,16
+Fiat,500,2014-2020,Blue & Me system frozen,Software glitch - disconnect battery for 30 mins to reset,Low,No,£0,DIY,54
+Fiat,Punto,2012-2018,Power steering heavy,Electric power steering motor fault or low battery voltage,Medium,Yes,£150-600,Professional,27
+Alfa Romeo,Giulietta,2014-2019,Engine cuts out while driving,Throttle body or fuel pump issue. Check for fault codes,High,Yes,£150-800,Professional,14
+Jaguar,XF,2015-2021,Restricted performance warning,Turbo underboost or air filter blocked. Check air filter and boost system,Medium,Yes,£20-1200,Professional,21
+Jaguar,F-Pace,2017-2022,Gearbox fault - park brake,Parking brake actuator motor failure. Common ZF gearbox issue,Medium,Yes,£300-900,Professional,18
+Dacia,Duster,2015-2020,Loud knocking from front,Worn suspension strut top mounts. Replace mounts and check struts,Low,No,£100-300,Intermediate,29
+Ford,Mondeo,2014-2019,Diesel won't start when cold,Glow plugs failed or diesel in fuel filter gelled. Test glow plugs,Medium,No,£80-250,Intermediate,33
+Ford,Kuga,2016-2021,Coolant loss - no visible leak,Head gasket failure or EGR cooler leak. Needs pressure test,High,No,£400-1500,Professional,26
+Vauxhall,Mokka,2015-2019,Rattling from engine - cold start,Timing chain stretch or heat shield loose. Investigate source urgently,Medium,No,£50-800,Professional,31
+Vauxhall,Insignia,2017-2022,Turbo wastegate rattle,Wastegate arm worn or carbon buildup. May need turbo replacement,Medium,No,£600-1800,Professional,23
+BMW,1 Series,2013-2019,Rough idle and EML light,Vacuum leak or intake manifold fault. Check for air leaks,Medium,Yes,£80-600,Intermediate,28
+BMW,5 Series,2016-2022,Gearbox in failsafe mode,ZF gearbox mechatronic or solenoid fault. Needs specialist diagnostics,High,Yes,£300-2500,Professional,17
+Volkswagen,Tiguan,2016-2021,Sunroof rattling,Sunroof cassette loose or rails need lubrication,Low,No,£30-250,Intermediate,34
+Volkswagen,Passat,2015-2020,DPF light on - won't regenerate,DPF blocked beyond regeneration or sensor fault,Medium,Yes,£200-1500,Professional,41
+Mercedes,A Class,2015-2020,ESP warning light,Steering angle sensor needs calibration or ABS sensor fault,Medium,Yes,£60-300,Professional,25
+Mercedes,GLC,2018-2023,Airmatic suspension warning,Compressor or air spring failure. Expensive repair,Medium,Yes,£600-2200,Professional,15
+Audi,Q5,2016-2021,Oil warning light flickering,Oil level sensor fault or low oil pressure. Check oil level immediately,High,Yes,£20-600,Professional,22
+Audi,TT,2014-2019,Loud whine from transmission,Dual-clutch transmission bearing wear or lack of oil,Medium,No,£200-2500,Professional,19
+Nissan,Micra,2017-2022,Key fob not working,Battery dead or needs reprogramming. Replace battery first,Low,No,£5-80,DIY,47
+Nissan,X-Trail,2015-2020,CVT juddering at low speed,CVT fluid degraded - change fluid and filter,Medium,No,£180-300,Professional,24
+Toyota,Aygo,2014-2020,Clutch heavy and high biting point,Clutch worn - needs replacement,Medium,No,£350-600,Professional,31
+Toyota,RAV4,2018-2024,Hybrid system warning,12V battery weak affecting hybrid system. Replace auxiliary battery,Medium,Yes,£100-200,Intermediate,18
+Honda,Jazz,2015-2021,Squealing from engine bay,Auxiliary belt worn or tensioner pulley failing,Low,No,£60-200,Intermediate,36
+Honda,HR-V,2016-2022,Fuel gauge reading incorrectly,Fuel sender unit fault - common Honda issue,Low,No,£150-400,Professional,21
+Mini,Clubman,2015-2020,Turbo boost pipe split,Common failure - boost hose splits causing loss of power,Medium,Yes,£80-200,Intermediate,44
+Range Rover,Sport,2017-2023,Parking brake fault,Electronic parking brake motor or module fault,Medium,Yes,£300-1200,Professional,16
+Land Rover,Defender,2020-2024,AdBlue system fault,DEF quality sensor or injector issue. Try different AdBlue brand first,Medium,Yes,£20-800,Professional,13
+Peugeot,2008,2016-2021,Turbo cutting out,Turbo actuator sticking or vacuum leak. Clean actuator mechanism,Medium,Yes,£100-600,Professional,27
+Renault,Captur,2017-2022,Gearbox crunching into 2nd gear,Synchro worn or clutch drag. Check clutch pedal free play,Medium,No,£400-1200,Professional,23
+Mazda,2,2015-2020,Check engine light - catalyst fault,Catalytic converter efficiency below threshold or lambda sensor,Medium,Yes,£120-1200,Professional,19
+Volvo,S60,2015-2019,Engine oil leak,Cam cover gasket or oil filter housing leak. Common leak points,Low,No,£80-350,Intermediate,26
+Skoda,Fabia,2014-2019,Central locking not working,Door lock actuator failure or central locking pump,Low,No,£60-250,Intermediate,38
+Seat,Ateca,2017-2022,Auto start-stop not working,Battery not strong enough or system disabled. Check battery health,Low,No,£0-250,Intermediate,29
+Kia,Ceed,2018-2023,Exhaust blowing,Exhaust gasket failed or flexi pipe split,Low,No,£40-200,Intermediate,32
+Hyundai,Kona,2018-2023,Steering wheel shaking at speed,Wheel balance or alignment out,Low,No,£40-100,Intermediate,41
+Citroen,Berlingo,2015-2020,Sliding door not closing,Door roller or latch worn. Lubricate mechanism first,Low,No,£15-300,Intermediate,24
+Fiat,Tipo,2016-2021,Heater blowing cold,Thermostat stuck open or heater matrix blocked,Medium,No,£80-400,Intermediate,28
+Ford,EcoSport,2014-2020,Rear wiper not working,Wiper motor failed or electrical connection corroded,Low,No,£60-180,Intermediate,22
+Vauxhall,Crossland,2017-2022,Brake pedal vibration,Warped front brake discs. Replace discs and pads,Low,No,£120-280,Intermediate,31
+BMW,X3,2017-2023,Drivetrain malfunction warning,Ignition coil or injector fault. Scan for specific cylinder fault,Medium,Yes,£100-500,Professional,19
+Volkswagen,T-Roc,2018-2023,Infotainment system frozen,Software bug - perform hard reset or update software,Low,No,£0-150,DIY,36
+Mercedes,B Class,2015-2019,Rough running when cold,Carbon buildup on intake valves. Walnut blasting needed,Medium,No,£300-600,Professional,17
+Audi,Q3,2015-2020,Steering judder when braking,Warped discs or suspension bush worn,Medium,No,£120-400,Professional,24
+Nissan,Leaf,2016-2022,12V battery warning,Auxiliary battery failing - not main traction battery,Medium,Yes,£90-180,Intermediate,21
+Toyota,C-HR,2017-2022,Parking sensors not working,Sensor dirty or faulty - clean sensors first,Low,No,£5-150,DIY,33
+Honda,Accord,2015-2020,Transmission fluid leak,Gearbox seal or cooler line leak. Identify source,Medium,No,£80-400,Professional,18
+Mini,One,2014-2019,Engine running hot,Cooling fan not working or thermostat stuck closed,High,Yes,£100-450,Professional,27
+Land Rover,Freelander,2013-2015,VCU (Viscous Coupling) seized,Transmission wind-up causing juddering. Replace VCU unit,High,No,£600-1200,Professional,16
+Peugeot,5008,2017-2023,Panoramic roof leaking,Drain tubes blocked - clear drains,Low,No,£20-200,Intermediate,25
+Renault,Kadjar,2016-2021,Lane assist not working,Camera dirty or needs calibration,Low,No,£20-250,Professional,19
+Mazda,6,2016-2021,Diesel smoking on acceleration,DPF regeneration needed or injector fault,Medium,Yes,£0-1200,Professional,22
+Volvo,XC90,2018-2024,Tailgate won't open,Tailgate latch motor failure or button fault,Low,No,£150-500,Professional,14
+Skoda,Kodiaq,2017-2023,AdBlue warning - 600 miles range,AdBlue tank low or heater fault. Top up AdBlue,Medium,Yes,£15-400,Intermediate,26
