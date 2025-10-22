@@ -1,39 +1,32 @@
-# image_analysis.py - Vision analysis for OBDly
+# image_analysis.py - Vision analysis for OBDly with Car Identification
 
 import base64
 import streamlit as st
 from openai import OpenAI
 from datetime import datetime, date
 import os
+import json
 
 # Initialize OpenAI client
 client = OpenAI(api_key=os.environ.get("OBDLY_key2"))
 
 
-# ═══════════════════ IMAGE ANALYSIS CORE ═══════════════════
-def analyze_car_image(image_obj,
-                      user_question: str = "",
-                      filename: str | None = None):
+# ═══════════════════ CAR IDENTIFICATION ═══════════════════
+def identify_car_from_image(image_obj, filename: str | None = None):
     """
-    Analyze car image using GPT-4o-mini vision.
-
-    Args:
-        image_obj: Streamlit UploadedFile or raw bytes
-        user_question: Optional context from user
-        filename: Optional filename (used to infer MIME if bytes provided)
-
+    Identify car make, model, and year from an image.
+    
     Returns:
-        str: Analysis result
+        dict: {"make": str, "model": str, "year": str, "confidence": str, "identified": bool}
     """
     import mimetypes
 
     try:
-        # --- Normalise input to (bytes, mime, name) ---
+        # Normalize input to bytes
         image_bytes = None
         mime_type = None
         file_name = filename or "upload.jpg"
 
-        # Case 1: UploadedFile / file-like
         if hasattr(image_obj, "read"):
             try:
                 file_name = getattr(image_obj, "name", file_name) or file_name
@@ -45,16 +38,146 @@ def analyze_car_image(image_obj,
                 mime_type = None
 
             image_bytes = image_obj.read()
-            # rewind so the object can be reused later if needed
             try:
                 image_obj.seek(0)
             except Exception:
                 pass
 
-        # Case 2: raw bytes
         elif isinstance(image_obj, (bytes, bytearray)):
             image_bytes = bytes(image_obj)
+        else:
+            return {"identified": False, "error": "Unsupported image format"}
 
+        if not image_bytes:
+            return {"identified": False, "error": "Could not read image"}
+
+        # Guess MIME type
+        if not mime_type and file_name:
+            guessed, _ = mimetypes.guess_type(file_name)
+            mime_type = guessed or "image/jpeg"
+        if not mime_type:
+            mime_type = "image/jpeg"
+
+        # Base64 encode
+        base64_image = base64.b64encode(image_bytes).decode("utf-8")
+
+        # Car identification prompt
+        system_prompt = (
+            "You are a car identification expert. Analyze the image and identify the vehicle. "
+            "Return ONLY a JSON object with this exact structure:\n"
+            '{"make": "manufacturer name", "model": "model name", "year": "year or year range", '
+            '"confidence": "high/medium/low", "identified": true}\n\n'
+            "If you cannot identify the car clearly, return:\n"
+            '{"identified": false, "reason": "brief explanation"}\n\n'
+            "Rules:\n"
+            "- Be specific with model variants (e.g., 'Golf GTI' not just 'Golf')\n"
+            "- Year can be a range like '2015-2018' if unsure of exact year\n"
+            "- Only return high confidence if you're very certain\n"
+            "- Consider badges, body shape, lights, wheels, and other visible features"
+        )
+
+        user_prompt = "Identify the make, model, and approximate year of this vehicle. Return only JSON."
+
+        messages = [{
+            "role": "system",
+            "content": system_prompt
+        }, {
+            "role":
+            "user",
+            "content": [{
+                "type": "text",
+                "text": user_prompt
+            }, {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:{mime_type};base64,{base64_image}",
+                    "detail": "high"
+                }
+            }]
+        }]
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            max_tokens=200,
+            temperature=0.3  # Lower temperature for more consistent JSON
+        )
+
+        result_text = response.choices[0].message.content.strip()
+
+        # Try to extract JSON if wrapped in markdown code blocks
+        if "```json" in result_text:
+            result_text = result_text.split("```json")[1].split(
+                "```")[0].strip()
+        elif "```" in result_text:
+            result_text = result_text.split("```")[1].split("```")[0].strip()
+
+        # Parse JSON
+        result = json.loads(result_text)
+        return result
+
+    except json.JSONDecodeError as e:
+        return {
+            "identified": False,
+            "error": f"Could not parse response: {str(e)}"
+        }
+    except Exception as e:
+        return {"identified": False, "error": str(e)}
+
+
+# ═══════════════════ IMAGE ANALYSIS CORE ═══════════════════
+def analyze_car_image(image_obj,
+                      user_question: str = "",
+                      filename: str | None = None,
+                      skip_car_id: bool = False):
+    """
+    Analyze car image using GPT-4o-mini vision.
+    
+    Args:
+        image_obj: Streamlit UploadedFile or raw bytes
+        user_question: Optional context from user
+        filename: Optional filename
+        skip_car_id: If True, skip car identification step
+
+    Returns:
+        str: Analysis result
+    """
+    import mimetypes
+
+    try:
+        # --- Step 1: Try to identify the car first (unless skipped) ---
+        car_info = None
+        if not skip_car_id:
+            car_info = identify_car_from_image(image_obj, filename)
+            if car_info.get("identified") and car_info.get("confidence") in [
+                    "high", "medium"
+            ]:
+                # Store in session for potential use
+                st.session_state["detected_car"] = car_info
+
+        # --- Step 2: Normalize input to (bytes, mime, name) ---
+        image_bytes = None
+        mime_type = None
+        file_name = filename or "upload.jpg"
+
+        if hasattr(image_obj, "read"):
+            try:
+                file_name = getattr(image_obj, "name", file_name) or file_name
+            except Exception:
+                pass
+            try:
+                mime_type = getattr(image_obj, "type", None)
+            except Exception:
+                mime_type = None
+
+            image_bytes = image_obj.read()
+            try:
+                image_obj.seek(0)
+            except Exception:
+                pass
+
+        elif isinstance(image_obj, (bytes, bytearray)):
+            image_bytes = bytes(image_obj)
         else:
             return "⚠️ Unsupported image object. Please re-upload the photo."
 
@@ -71,10 +194,17 @@ def analyze_car_image(image_obj,
         # Base64 encode
         base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
-        # Build prompts
+        # Build prompts with car context if identified
+        car_context = ""
+        if car_info and car_info.get("identified"):
+            make = car_info.get("make", "")
+            model = car_info.get("model", "")
+            year = car_info.get("year", "")
+            car_context = f"\n\n[VEHICLE DETECTED: {make} {model} {year}]\n"
+
         system_prompt = (
             "You're OBDly, a UK-based car diagnostic assistant analyzing photos. "
-            "Identify:\n"
+            + car_context + "Identify:\n"
             "- Dashboard warning lights (describe colour, symbol, meaning)\n"
             "- Visible mechanical issues\n"
             "- Damage or leaks\n"
@@ -82,7 +212,8 @@ def analyze_car_image(image_obj,
             "- Any safety concerns\n\n"
             "Be specific, use UK terminology (bonnet, boot, tyre), "
             "suggest if it's DIY-fixable or needs a mechanic, "
-            "and estimate UK costs where relevant.")
+            "and estimate UK costs where relevant. "
+            "Include make/model-specific advice where possible.")
 
         user_prompt = user_question or "What can you see wrong with this car? Please analyse the image in detail."
 
@@ -109,10 +240,86 @@ def analyze_car_image(image_obj,
                                                   max_tokens=600,
                                                   temperature=0.6)
 
-        return response.choices[0].message.content
+        analysis = response.choices[0].message.content
+
+        # Prepend car identification if detected
+        if car_info and car_info.get("identified"):
+            make = car_info.get("make", "")
+            model = car_info.get("model", "")
+            year = car_info.get("year", "")
+            conf = car_info.get("confidence", "medium")
+
+            car_header = f"🚗 **Detected Vehicle:** {make} {model} {year} ({conf} confidence)\n\n"
+            analysis = car_header + analysis
+
+        return analysis
 
     except Exception as e:
         return f"⚠️ Image analysis failed: {str(e)}\n\nPlease try again or describe the issue in text."
+
+
+def show_car_identification_confirmation():
+    """
+    Show UI to confirm detected car and optionally populate vehicle data
+    Returns: bool (whether user confirmed)
+    """
+    if "detected_car" not in st.session_state:
+        return False
+
+    car_info = st.session_state["detected_car"]
+    if not car_info.get("identified"):
+        return False
+
+    make = car_info.get("make", "")
+    model = car_info.get("model", "")
+    year = car_info.get("year", "")
+    confidence = car_info.get("confidence", "medium")
+
+    if not make or not model:
+        return False
+
+    # Only show if we don't already have a vehicle set
+    if st.session_state.get("vehicle"):
+        return False
+
+    st.info(
+        f"🚗 I detected this might be a **{make} {model} ({year})** - {confidence} confidence"
+    )
+
+    col1, col2, col3 = st.columns([2, 2, 3])
+
+    with col1:
+        if st.button("✅ Yes, that's correct",
+                     key="confirm_car_yes",
+                     use_container_width=True):
+            # Populate vehicle session state
+            st.session_state["vehicle"] = {
+                "make": make,
+                "model": model,
+                "yearOfManufacture": year.split("-")[0]
+                if "-" in year else year,  # Take first year if range
+                "registrationNumber": "DETECTED_FROM_IMAGE",
+                "_source": "Image Detection"
+            }
+            st.session_state[
+                "detected_car"] = None  # Clear so we don't ask again
+            st.success(f"✅ Vehicle set to {make} {model}")
+            st.rerun()
+            return True
+
+    with col2:
+        if st.button("❌ No, that's wrong",
+                     key="confirm_car_no",
+                     use_container_width=True):
+            st.session_state["detected_car"] = None  # Clear detection
+            st.info(
+                "No problem - you can enter your registration manually above")
+            return False
+
+    with col3:
+        st.caption("This helps me give better advice")
+
+    return False
 
 
 # ═══════════════════ RATE LIMITING ═══════════════════
@@ -222,6 +429,10 @@ def show_image_uploader():
                 analysis = analyze_car_image(uploaded_file, context)
                 increment_image_count()
                 log_image_analysis(uploaded_file.name, analysis)
+
+                # Show car identification confirmation if detected
+                show_car_identification_confirmation()
+
                 return uploaded_file, analysis
 
     return None, None
