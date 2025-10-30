@@ -1306,6 +1306,8 @@ if not ss.logged_in:
                 st.warning("Please enter both username and password")
 
     with tab2:
+        st.caption("🔒 Privacy: We don't collect emails or personal info.")
+
         signup_username = st.text_input("Choose Username",
                                         key="signup_username")
         signup_password = st.text_input("Choose Password (min 6 chars)",
