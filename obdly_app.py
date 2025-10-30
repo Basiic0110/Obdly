@@ -1,4 +1,4 @@
-# obdly_app.py — OBDly v3.2 (Resume Chat Feature Added)
+# obdly_app.py — OBDly v3.3 (OBD Code Library + Caching + Resume Chat)
 
 import os
 import csv
@@ -9,6 +9,9 @@ import hashlib
 import unicodedata
 import requests
 import json
+import re
+import base64, pathlib
+from glob import glob
 from datetime import datetime, date
 
 import streamlit as st
@@ -33,6 +36,7 @@ st.markdown("""
 .user-message{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:12px 16px;border-radius:18px 18px 4px 18px;margin:8px 0 8px auto;max-width:80%;width:fit-content;box-shadow:0 2px 8px rgba(102,126,234,.3);}
 .ai-message{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#e2e8f0;padding:12px 16px;border-radius:18px 18px 18px 4px;margin:8px auto 8px 0;max-width:85%;width:fit-content;box-shadow:0 2px 8px rgba(0,0,0,.1);}
 .csv-message{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);border:2px solid rgba(240,147,251,.5);color:#fff;padding:14px 18px;border-radius:18px;margin:12px auto;max-width:90%;box-shadow:0 4px 12px rgba(240,147,251,.3);}
+.code-message{background:linear-gradient(135deg,#38bdf8 0%,#6366f1 100%);border:2px solid rgba(99,102,241,.45);color:#fff;padding:14px 18px;border-radius:18px;margin:12px auto;max-width:90%;box-shadow:0 4px 12px rgba(99,102,241,.25);}
 .system-message{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:#93c5fd;padding:10px 14px;border-radius:10px;margin:8px auto;max-width:90%;text-align:center;font-size:.9rem;font-style:italic;}
 .message-time{font-size:.75rem;opacity:.6;margin-top:4px;}
 .obd-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.1);}
@@ -50,7 +54,10 @@ st.markdown("""
 @keyframes kitt-scan{0%{left:-40px;}50%{left:100%;}100%{left:-40px;}}
 .stButton>button{border-radius:10px;width:100%;font-weight:600;}
 .stSuccess,.stWarning,.stError{border-radius:10px;}
-.stTextInput input{text-transform:uppercase !important;}
+/* Only uppercase registration input */
+.stTextInput input[placeholder*="CDE"]{text-transform:uppercase !important;}
+/* Normal case for all other inputs */
+.stTextInput input{text-transform:none !important;}
 </style>
 """,
             unsafe_allow_html=True)
@@ -77,6 +84,21 @@ if not (os.environ.get("MOT_API_KEY") and os.environ.get("MOT_CLIENT_ID") and
         "⚠️ MOT OAuth not fully configured (need MOT_API_KEY, MOT_CLIENT_ID, MOT_CLIENT_SECRET, MOT_TOKEN_URL, MOT_SCOPE_URL)."
     )
 
+# ═══════════════════ MAINTENANCE MODE (for future updates) ═══════════════════
+MAINTENANCE_MODE = False  # Set to True to enable maintenance mode
+
+if MAINTENANCE_MODE:
+    st.markdown("## 🔒 Obdly - Temporary Maintenance")
+    st.info("""
+    **We're performing a quick update to improve your experience.**
+    
+    Expected back online: Within 30 minutes
+    
+    Thanks for your patience!
+    """)
+    st.stop()
+# ═════════════════════════════════════════════════════════════════════════════
+
 # ───────────────────────── Session State ─────────────────────────
 ss = st.session_state
 ss.setdefault("chat_messages", [])
@@ -95,10 +117,101 @@ ss.setdefault("is_premium", False)
 ss.setdefault("processing_query", False)
 ss.setdefault("scroll_needed", False)
 ss.setdefault("current_conversation_id", None)
+ss.setdefault("obd_codes", {})  # NEW: merged OBD code dict
+ss.setdefault("last_detected_codes", [])  # NEW: last codes found in user text
+ss.setdefault("logged_in", False)
+ss.setdefault("username", None)
+ss.setdefault("user_id", None)
 
 if ss.api_counter_day != date.today().isoformat():
     ss.api_counter_day = date.today().isoformat()
     ss.api_calls_today = 0
+
+
+# ───────────────────────── User Authentication ─────────────────────────
+def hash_password(password: str) -> str:
+    """Hash a password for storing."""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+def load_users():
+    """Load users from JSON file."""
+    try:
+        with open("users.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"users": {}, "conversations": {}}
+
+
+def save_users(data):
+    """Save users to JSON file."""
+    try:
+        with open("users.json", "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        st.error(f"Error saving users: {e}")
+
+
+def create_user(username: str, password: str) -> tuple[bool, str]:
+    """Create a new user account."""
+    data = load_users()
+
+    if username in data["users"]:
+        return False, "Username already exists"
+
+    data["users"][username] = {
+        "password_hash": hash_password(password),
+        "user_id": str(uuid.uuid4()),
+        "created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    save_users(data)
+    return True, "Account created successfully"
+
+
+def verify_user(username: str, password: str) -> tuple[bool, str | None]:
+    """Verify user credentials and return user_id if valid."""
+    data = load_users()
+
+    if username not in data["users"]:
+        return False, None
+
+    user = data["users"][username]
+    if user["password_hash"] == hash_password(password):
+        return True, user["user_id"]
+
+    return False, None
+
+
+def get_user_conversations(user_id: str) -> dict:
+    """Get conversations for a specific user."""
+    data = load_users()
+    return data.get("conversations", {}).get(user_id, {})
+
+
+def save_user_conversation(user_id: str, conv_id: str, conversation: dict):
+    """Save a conversation for a specific user."""
+    data = load_users()
+
+    if "conversations" not in data:
+        data["conversations"] = {}
+
+    if user_id not in data["conversations"]:
+        data["conversations"][user_id] = {}
+
+    data["conversations"][user_id][conv_id] = conversation
+    save_users(data)
+
+
+def delete_user_conversation(user_id: str, conv_id: str):
+    """Delete a conversation for a specific user."""
+    data = load_users()
+
+    if user_id in data.get("conversations",
+                           {}) and conv_id in data["conversations"][user_id]:
+        del data["conversations"][user_id][conv_id]
+        save_users(data)
+
 
 # ───────────────────────── System prompt ─────────────────────────
 SYS_PROMPT = (
@@ -106,51 +219,41 @@ SYS_PROMPT = (
     "Be conversational but specific. Ask clarifying questions for vague inputs. "
     "CRITICAL INSTRUCTIONS FOR ACCURACY:\n"
     "- Give SPECIFIC repair steps, not generic advice. Include exact part names, torque specs when relevant, and tool requirements.\n"
-    "- Cost estimates MUST be realistic for UK (2024-2025): labor £50-80/hr, parts vary by make/model. Always give ranges.\n"
+    "- Cost estimates MUST be realistic for UK (2024-2025): labour £50–80/hr, parts vary by make/model. Always give ranges.\n"
     "- If you're unsure about a specific model's quirks, SAY SO and recommend professional diagnosis.\n"
-    "- Prioritize safety: clearly state when a repair is beyond DIY capability.\n"
+    "- Prioritise safety: clearly state when a repair is beyond DIY capability.\n"
     "- Use UK terminology: bonnet (not hood), boot (not trunk), petrol/diesel, MOT, registration.\n"
     "- Reference common UK parts suppliers (Halfords, Euro Car Parts) and typical garage rates.\n"
     "- For common issues, mention if it's a known problem for that make/model.\n"
     "- Be honest about complexity: 'This needs a diagnostic scanner' vs 'You can check this yourself'."
 )
 
+
 # ───────────────────────── Registration Detection ─────────────────────────
-import re
-
-
 def detect_registration_request(text: str):
     """
     Detect if user is asking about a registration and extract it.
     Returns: (is_reg_query, registration_number)
     """
     text_lower = text.lower()
-
-    # Check for registration-related keywords
     reg_keywords = [
         'check', 'lookup', 'look up', 'find', 'search', 'what car',
         'what vehicle', 'tell me about', 'reg', 'registration', 'number plate',
         'vrm'
     ]
-
     has_keyword = any(keyword in text_lower for keyword in reg_keywords)
 
-    # UK registration pattern: 2-3 letters, 2-3 numbers, 3 letters
-    # Examples: AB12CDE, ABC123DEF, A1BCD, AB12 CDE
     reg_patterns = [
         r'\b([A-Z]{1,2}[0-9]{1,2}\s?[A-Z]{3})\b',  # AB12 CDE or AB12CDE
         r'\b([A-Z]{3}[0-9]{1,3}[A-Z])\b',  # ABC123D
         r'\b([A-Z][0-9]{1,3}[A-Z]{3})\b',  # A123BCD
     ]
-
     for pattern in reg_patterns:
         match = re.search(pattern, text.upper())
         if match:
             potential_reg = match.group(1).replace(' ', '')
-            # Basic validation: must be between 4-8 characters
             if 4 <= len(potential_reg) <= 8:
                 return True, potential_reg
-
     return False, None
 
 
@@ -180,36 +283,30 @@ def _normalise_text(s: str) -> str:
 
 # ───────────────────────── Conversation Management ─────────────────────────
 def save_conversation():
-    """Save current conversation to JSON file"""
-    if not ss.chat_messages:
+    """Save current conversation to user-specific storage"""
+    if not ss.chat_messages or not ss.get("user_id"):
         return
 
-    # Load existing conversations
-    try:
-        with open("conversations.json", "r", encoding="utf-8") as f:
-            conversations = json.load(f)
-    except FileNotFoundError:
-        conversations = {}
-
-    # Get or create conversation ID
     if "current_conversation_id" not in ss or not ss.current_conversation_id:
         ss.current_conversation_id = "conv_" + datetime.now().strftime(
             "%Y%m%d_%H%M%S")
 
     conv_id = ss.current_conversation_id
 
-    # Get first user message for preview
+    # Get existing conversations for this user
+    data = load_users()
+    user_convs = data.get("conversations", {}).get(ss.user_id, {})
+
     first_msg = next(
         (m["content"] for m in ss.chat_messages if m["role"] == "user"), "")
 
-    # Save conversation
-    conversations[conv_id] = {
+    conversation = {
         "id":
         conv_id,
         "created":
-        conversations.get(conv_id, {}).get(
-            "created",
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+        user_convs.get(conv_id,
+                       {}).get("created",
+                               datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
         "updated":
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "vehicle": (ss.vehicle or {}).get("registrationNumber", "N/A"),
@@ -219,38 +316,626 @@ def save_conversation():
         first_msg[:50]
     }
 
-    # Write to file
-    try:
-        with open("conversations.json", "w", encoding="utf-8") as f:
-            json.dump(conversations, f, indent=2)
-    except Exception as e:
-        st.sidebar.caption(f"Save error: {e}")
+    save_user_conversation(ss.user_id, conv_id, conversation)
 
 
-# ───────────────────────── Data helpers ─────────────────────────
-def load_fault_data():
+# ───────────────────────── Data helpers (CSV + OBD Codes) ─────────────────────────
+@st.cache_resource(show_spinner=False)
+def _cached_load_fault_csv():
     rows = []
     try:
         with open("obdly_fault_data.csv", "r", encoding="utf-8") as f:
             rows = list(csv.DictReader(f))
-        if rows:
-            st.sidebar.success(f"✅ Loaded {len(rows)} known faults")
     except FileNotFoundError:
+        rows = []
+    return rows
+
+
+def load_fault_data():
+    rows = _cached_load_fault_csv()
+    if rows:
+        st.sidebar.success(f"✅ Loaded {len(rows)} known faults")
+    else:
         st.sidebar.warning("⚠️ obdly_fault_data.csv not found.")
     ss.csv_rows = rows
 
 
+# NEW: Load OBD code libraries from JSON files in root
+_OBD_CODE_KEY_RE = re.compile(r'^[PBCU]\d{4}$', re.IGNORECASE)
+
+
+def _looks_like_code_dict(d: dict) -> bool:
+    if not isinstance(d, dict): return False
+    # Heuristic: at least one P/B/C/U code key
+    return any(_OBD_CODE_KEY_RE.match(str(k)) for k in d.keys())
+
+
+@st.cache_resource(show_spinner=False)
+def _cached_load_obd_libraries():
+    merged = {}
+    # Conservative patterns; we’ll also scan *.json and filter
+    patterns = ["obd_codes*.json", "*_codes.json", "*obd*.json", "*.json"]
+    seen = set()
+    for pat in patterns:
+        for path in glob(pat):
+            if path in seen:
+                continue
+            seen.add(path)
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data, dict) and _looks_like_code_dict(data):
+                    for k, v in data.items():
+                        k_up = str(k).upper()
+                        if _OBD_CODE_KEY_RE.match(k_up):
+                            # normalise structure
+                            if isinstance(v, dict):
+                                merged[k_up] = {
+                                    "title":
+                                    v.get("title") or v.get("name") or "",
+                                    "description":
+                                    v.get("description") or v.get("desc")
+                                    or v.get("meaning") or "",
+                                    "causes":
+                                    v.get("causes") or v.get("possible_causes")
+                                    or v.get("common_causes") or [],
+                                    "fixes":
+                                    v.get("fixes") or v.get("solutions")
+                                    or v.get("recommended_fixes") or [],
+                                    "severity":
+                                    v.get("severity") or "",
+                                    "symptoms":
+                                    v.get("symptoms") or [],
+                                }
+                            else:
+                                merged[k_up] = {
+                                    "title": "",
+                                    "description": str(v),
+                                    "causes": [],
+                                    "fixes": [],
+                                    "severity": "",
+                                    "symptoms": []
+                                }
+            except Exception:
+                # ignore non-parseable JSONs silently
+                pass
+    return merged
+
+
+def ensure_obd_loaded():
+    if not ss.obd_codes:
+        ss.obd_codes = _cached_load_obd_libraries()
+        if ss.obd_codes:
+            st.sidebar.success(f"✅ Loaded {len(ss.obd_codes):,} OBD codes")
+        else:
+            st.sidebar.warning("⚠️ No OBD code libraries found in JSON files.")
+
+
+_CODE_FINDER_RE = re.compile(r'\b([PBCU]\d{4})\b', re.IGNORECASE)
+
+
+def find_obd_codes_in_text(text: str):
+    if not text:
+        return []
+    codes = list({m.group(1).upper() for m in _CODE_FINDER_RE.finditer(text)})
+    return codes
+
+
+# NOW render_code_card starts...
+def render_code_card(code: str,
+                     entry: dict,
+                     keep_make: str | None = None) -> str:
+    """
+    FIXED: More aggressive brand filtering
+    """
+    # Normalize keep_make
+    if keep_make:
+        keep_make = keep_make.lower().strip()
+        # Handle common aliases
+        if keep_make in ("mercedes-benz", "merc", "mb"):
+            keep_make = "mercedes"
+        elif keep_make in ("vw", ):
+            keep_make = "volkswagen"
+        elif keep_make == "land rover":
+            keep_make = "landrover"
+
+    def _strip_other_brands(text: str) -> str:
+        """FIXED: More aggressive brand filtering"""
+        if not text:
+            return ""
+
+        # If no keep_make specified, return original (no filtering)
+        if not keep_make:
+            return text
+
+        # Split into sentences
+        sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text)]
+        filtered_sentences = []
+
+        # List of all possible makes (normalized)
+        all_makes = [
+            "ford", "bmw", "mercedes", "volkswagen", "audi", "vauxhall",
+            "opel", "peugeot", "citroen", "renault", "toyota", "honda",
+            "nissan", "mazda", "hyundai", "kia", "skoda", "seat", "volvo",
+            "mini", "jaguar", "landrover", "fiat", "alfa romeo", "dacia",
+            "tesla", "mitsubishi", "suzuki", "subaru", "lexus", "porsche",
+            "saab"
+        ]
+
+        for sentence in sentences:
+            sentence_lower = sentence.lower()
+
+            # Check if sentence mentions ANY car make
+            mentions_car_make = any(make in sentence_lower
+                                    for make in all_makes)
+
+            if mentions_car_make:
+                # If it mentions a make, keep ONLY if it's the target make
+                if keep_make in sentence_lower:
+                    filtered_sentences.append(sentence)
+                # Otherwise, skip this sentence entirely
+            else:
+                # No car make mentioned = generic advice = keep it
+                filtered_sentences.append(sentence)
+
+        return " ".join(filtered_sentences)
+
+    def _fmt_severity(s: str) -> str:
+        if not s: return ""
+        s = s.replace("_", " ")
+        return s[:1].upper() + s[1:]
+
+    # Extract and filter all fields
+    title = html.escape(entry.get("title") or "")
+    raw_desc = entry.get("description") or ""
+    desc = html.escape(_strip_other_brands(raw_desc))
+    sev = html.escape(_fmt_severity(entry.get("severity") or ""))
+
+    # Filter lists (causes, symptoms, fixes)
+    def _filter_list(items):
+        if not items or not keep_make:
+            return items
+        filtered = []
+        for item in items:
+            item_str = str(item).lower()
+            # Check if mentions any car make
+            mentions_make = any(make in item_str for make in [
+                "ford", "bmw", "mercedes", "volkswagen", "audi", "vauxhall",
+                "peugeot", "citroen", "renault", "toyota", "honda", "nissan"
+            ])
+            if mentions_make:
+                # Only keep if it's our target make
+                if keep_make in item_str:
+                    filtered.append(item)
+            else:
+                # Generic advice - keep it
+                filtered.append(item)
+        return filtered
+
+    symptoms = _filter_list(entry.get("symptoms") or [])
+    causes = _filter_list(entry.get("causes") or [])
+    fixes = _filter_list(entry.get("fixes") or [])
+
+    def _ul(items):
+        if not items: return "—"
+        safe = [f"<li>{html.escape(str(i))}</li>" for i in items[:8]]
+        return "<ul style='margin:6px 0 0 18px; padding-left:0'>" + "".join(
+            safe) + "</ul>"
+
+    parts = [
+        f"<strong>{html.escape(code)}</strong> {('— ' + title) if title else ''}",
+        f"<div style='opacity:.95;margin:6px 0'>{desc or 'No description available.'}</div>",
+        f"<div><strong>Severity:</strong> {sev or 'Not specified'}</div>",
+        f"<div style='margin-top:6px'><strong>Typical Symptoms:</strong> {_ul(symptoms)}</div>",
+        f"<div style='margin-top:6px'><strong>Common Causes:</strong> {_ul(causes)}</div>",
+        f"<div style='margin-top:6px'><strong>Suggested Fixes:</strong> {_ul(fixes)}</div>",
+    ]
+    return "<div class='code-message'>" + "<br>".join(parts) + "</div>"
+
+
+# --- Vehicle make/model detection from free text (FIXED with model-to-make mapping) ---
+_MAKES = [
+    "audi", "bmw", "mercedes", "mercedes-benz", "vw", "volkswagen", "ford",
+    "fiat", "vauxhall", "opel", "peugeot", "citroen", "renault", "toyota",
+    "honda", "nissan", "mazda", "hyundai", "kia", "skoda", "seat", "volvo",
+    "mini", "jaguar", "land rover", "landrover", "mitsubishi", "suzuki",
+    "subaru", "lexus", "porsche", "saab", "alfa romeo", "alfa-romeo", "dacia",
+    "tesla"
+]
+
+# FIXED: Comprehensive model-to-make mapping
+_MODEL_TO_MAKE = {
+    # Ford
+    "fiesta": "ford",
+    "focus": "ford",
+    "mondeo": "ford",
+    "kuga": "ford",
+    "puma": "ford",
+    "ranger": "ford",
+    "transit": "ford",
+    "ecosport": "ford",
+    "mustang": "ford",
+    "ka": "ford",
+    "galaxy": "ford",
+    "s-max": "ford",
+    "edge": "ford",
+    "explorer": "ford",
+    "bronco": "ford",
+    "escort": "ford",
+    "sierra": "ford",
+    "orion": "ford",
+    "fusion": "ford",
+    "c-max": "ford",
+
+    # BMW
+    "320d": "bmw",
+    "330d": "bmw",
+    "520d": "bmw",
+    "x1": "bmw",
+    "x3": "bmw",
+    "x5": "bmw",
+    "z4": "bmw",
+    "m3": "bmw",
+    "m5": "bmw",
+    "i3": "bmw",
+    "1 series": "bmw",
+    "2 series": "bmw",
+    "3 series": "bmw",
+    "4 series": "bmw",
+    "5 series": "bmw",
+    "7 series": "bmw",
+    "x2": "bmw",
+    "x4": "bmw",
+    "x6": "bmw",
+
+    # Mercedes
+    "a-class": "mercedes",
+    "c-class": "mercedes",
+    "e-class": "mercedes",
+    "s-class": "mercedes",
+    "cla": "mercedes",
+    "gla": "mercedes",
+    "glc": "mercedes",
+    "gle": "mercedes",
+    "gls": "mercedes",
+    "amg": "mercedes",
+    "sprinter": "mercedes",
+    "vito": "mercedes",
+    "b-class": "mercedes",
+    "cls": "mercedes",
+    "glb": "mercedes",
+
+    # VW
+    "golf": "volkswagen",
+    "polo": "volkswagen",
+    "passat": "volkswagen",
+    "tiguan": "volkswagen",
+    "touareg": "volkswagen",
+    "arteon": "volkswagen",
+    "t-roc": "volkswagen",
+    "up": "volkswagen",
+    "jetta": "volkswagen",
+    "caddy": "volkswagen",
+    "transporter": "volkswagen",
+    "touran": "volkswagen",
+    "sharan": "volkswagen",
+    "beetle": "volkswagen",
+    "scirocco": "volkswagen",
+
+    # Audi
+    "a1": "audi",
+    "a3": "audi",
+    "a4": "audi",
+    "a5": "audi",
+    "a6": "audi",
+    "a7": "audi",
+    "a8": "audi",
+    "q2": "audi",
+    "q3": "audi",
+    "q5": "audi",
+    "q7": "audi",
+    "q8": "audi",
+    "tt": "audi",
+    "r8": "audi",
+    "rs3": "audi",
+    "rs4": "audi",
+    "rs5": "audi",
+    "rs6": "audi",
+    "s3": "audi",
+    "s4": "audi",
+
+    # Vauxhall/Opel
+    "corsa": "vauxhall",
+    "astra": "vauxhall",
+    "insignia": "vauxhall",
+    "mokka": "vauxhall",
+    "crossland": "vauxhall",
+    "grandland": "vauxhall",
+    "vivaro": "vauxhall",
+    "combo": "vauxhall",
+    "zafira": "vauxhall",
+    "vectra": "vauxhall",
+    "meriva": "vauxhall",
+    "antara": "vauxhall",
+
+    # Peugeot
+    "208": "peugeot",
+    "308": "peugeot",
+    "2008": "peugeot",
+    "3008": "peugeot",
+    "5008": "peugeot",
+    "508": "peugeot",
+    "partner": "peugeot",
+    "rifter": "peugeot",
+    "107": "peugeot",
+    "207": "peugeot",
+    "307": "peugeot",
+    "407": "peugeot",
+
+    # Citroen
+    "c1": "citroen",
+    "c3": "citroen",
+    "c4": "citroen",
+    "c5": "citroen",
+    "berlingo": "citroen",
+    "dispatch": "citroen",
+    "c3 aircross": "citroen",
+    "c5 aircross": "citroen",
+    "spacetourer": "citroen",
+
+    # Renault
+    "clio": "renault",
+    "megane": "renault",
+    "captur": "renault",
+    "kadjar": "renault",
+    "scenic": "renault",
+    "koleos": "renault",
+    "zoe": "renault",
+    "twingo": "renault",
+    "trafic": "renault",
+    "kangoo": "renault",
+    "laguna": "renault",
+
+    # Toyota
+    "yaris": "toyota",
+    "corolla": "toyota",
+    "camry": "toyota",
+    "rav4": "toyota",
+    "highlander": "toyota",
+    "prius": "toyota",
+    "aygo": "toyota",
+    "hilux": "toyota",
+    "land cruiser": "toyota",
+    "avensis": "toyota",
+    "auris": "toyota",
+    "verso": "toyota",
+
+    # Honda
+    "civic": "honda",
+    "accord": "honda",
+    "cr-v": "honda",
+    "hr-v": "honda",
+    "jazz": "honda",
+    "insight": "honda",
+    "fr-v": "honda",
+
+    # Nissan
+    "micra": "nissan",
+    "juke": "nissan",
+    "qashqai": "nissan",
+    "x-trail": "nissan",
+    "leaf": "nissan",
+    "navara": "nissan",
+    "note": "nissan",
+    "370z": "nissan",
+    "gt-r": "nissan",
+
+    # Mazda
+    "mx-5": "mazda",
+    "mazda2": "mazda",
+    "mazda3": "mazda",
+    "mazda6": "mazda",
+    "cx-3": "mazda",
+    "cx-5": "mazda",
+    "cx-30": "mazda",
+    "rx-8": "mazda",
+
+    # Hyundai
+    "i10": "hyundai",
+    "i20": "hyundai",
+    "i30": "hyundai",
+    "tucson": "hyundai",
+    "kona": "hyundai",
+    "santa fe": "hyundai",
+    "ioniq": "hyundai",
+    "i40": "hyundai",
+
+    # Kia
+    "picanto": "kia",
+    "rio": "kia",
+    "ceed": "kia",
+    "sportage": "kia",
+    "sorento": "kia",
+    "niro": "kia",
+    "stonic": "kia",
+    "soul": "kia",
+
+    # Skoda
+    "fabia": "skoda",
+    "octavia": "skoda",
+    "superb": "skoda",
+    "kodiaq": "skoda",
+    "karoq": "skoda",
+    "kamiq": "skoda",
+    "citigo": "skoda",
+
+    # Seat
+    "ibiza": "seat",
+    "leon": "seat",
+    "arona": "seat",
+    "ateca": "seat",
+    "tarraco": "seat",
+    "mii": "seat",
+    "alhambra": "seat",
+
+    # Volvo
+    "v40": "volvo",
+    "v60": "volvo",
+    "v90": "volvo",
+    "s60": "volvo",
+    "s90": "volvo",
+    "xc40": "volvo",
+    "xc60": "volvo",
+    "xc90": "volvo",
+    "v70": "volvo",
+    "s80": "volvo",
+
+    # Fiat
+    "500": "fiat",
+    "panda": "fiat",
+    "tipo": "fiat",
+    "punto": "fiat",
+    "500x": "fiat",
+    "500l": "fiat",
+    "doblo": "fiat",
+    "bravo": "fiat",
+
+    # Mini
+    "cooper": "mini",
+    "countryman": "mini",
+    "clubman": "mini",
+    "one": "mini",
+
+    # Jaguar
+    "xe": "jaguar",
+    "xf": "jaguar",
+    "xj": "jaguar",
+    "f-pace": "jaguar",
+    "e-pace": "jaguar",
+    "i-pace": "jaguar",
+    "f-type": "jaguar",
+    "x-type": "jaguar",
+
+    # Land Rover
+    "defender": "landrover",
+    "discovery": "landrover",
+    "freelander": "landrover",
+    "range rover": "landrover",
+    "evoque": "landrover",
+    "velar": "landrover",
+    "sport": "landrover",
+    "discovery sport": "landrover",
+
+    # Alfa Romeo
+    "giulietta": "alfa romeo",
+    "giulia": "alfa romeo",
+    "stelvio": "alfa romeo",
+    "mito": "alfa romeo",
+    "147": "alfa romeo",
+    "156": "alfa romeo",
+    "159": "alfa romeo",
+
+    # Dacia
+    "sandero": "dacia",
+    "duster": "dacia",
+    "logan": "dacia",
+    "stepway": "dacia",
+
+    # Tesla
+    "model s": "tesla",
+    "model 3": "tesla",
+    "model x": "tesla",
+    "model y": "tesla",
+}
+
+
+def detect_make_model_from_text(text: str) -> tuple[str | None, str | None]:
+    """
+    FIXED: Now checks model names first (most specific), then make names
+    """
+    t = (text or "").lower()
+    make_hit = None
+    model_hit = None
+
+    # PRIORITY 1: Check if we have vehicle data in session
+    if ss.vehicle:
+        vmake = (ss.vehicle.get("make") or "").lower().strip()
+        vmodel = (ss.vehicle.get("model") or "").lower().strip()
+        if vmake:
+            make_hit = vmake
+        if vmodel:
+            model_hit = vmodel
+        if make_hit:  # If we found make from session, use it and return early
+            return make_hit, model_hit
+
+    # PRIORITY 2: Check for model names (most specific - "Fiesta" → "Ford")
+    for model, make in _MODEL_TO_MAKE.items():
+        if model in t:
+            make_hit = make
+            model_hit = model
+            break
+
+    # PRIORITY 3: If no model found, check for make names directly
+    if not make_hit:
+        for mk in _MAKES:
+            if mk in t:
+                make_hit = "mercedes" if mk in (
+                    "mercedes-benz", "mercedes") else (
+                        "landrover" if mk == "land rover" else mk)
+                break
+
+    # PRIORITY 4: If we found a make but no model, try to grab the word after the make
+    if make_hit and not model_hit:
+        parts = t.split()
+        for i, w in enumerate(parts):
+            if w == make_hit or (make_hit == "mercedes"
+                                 and w.startswith("mercedes")):
+                if i + 1 < len(parts):
+                    nxt = parts[i + 1]
+                    if not _CODE_FINDER_RE.match(
+                            nxt.upper()) and nxt.isalpha():
+                        model_hit = nxt
+                break
+
+    return make_hit, model_hit
+
+
+# --- Quick next-step rules for common codes (extendable) ---
+NEXT_STEPS_RULES = {
+    "P0300": {
+        "generic": [
+            "Read freeze-frame data; note RPM, load, fuel trims.",
+            "Check for obvious vacuum leaks (split PCV hose, intake boots).",
+            "Inspect spark plugs for wear/fouling; set correct gap; replace if aged.",
+            "Swap coil packs between cylinders to see if misfire follows the coil.",
+            "Fuel quality: add fresh fuel; consider injector cleaner; on DI engines, consider injector balance test.",
+            "Check compression on suspect cylinders; if low, perform a wet test.",
+        ],
+        "ford": [
+            "Fiesta petrols: coil pack and HT leads are common; try swapping coils first.",
+            "EcoBoost: check plug gap (often closes up), cam cover PCV hose splits, and intake manifold gasket leaks.",
+            "If rough cold idle only, check for MAP sensor contamination and small vac leaks at purge lines.",
+        ],
+        "ford_diesel": [
+            "Check injector leak-off (return) rates; uneven return suggests injector issue.",
+            "Inspect glow plugs and harness (cold start misfires).",
+            "Check EGR sticking/sooting and boost hoses for splits.",
+        ]
+    }
+}
+
+
+# ───────────────────────── CSV match helper ─────────────────────────
 def csv_match(text: str):
     rows = ss.csv_rows or []
     if not rows:
         return None, 0
     text_lower = _normalise_text(text)
 
-    # Only match if symptomatic
     fault_words = [
         'problem', 'issue', 'fault', 'broken', 'not working', 'warning',
         'light', 'error', 'noise', 'smell', 'leak', 'vibration', 'shaking',
-        'stalling', 'won\'t start', 'rough', 'hesitating', 'knocking', 'smoke',
+        'stalling', "won't start", 'rough', 'hesitating', 'knocking', 'smoke',
         'overheating', 'grinding', 'squealing', 'clicking', 'burning', 'dying',
         'cutting out', 'juddering', 'misfiring'
     ]
@@ -279,20 +964,17 @@ def csv_match(text: str):
         model = _normalise_text(r.get('Model', ''))
         year = (r.get('Year', '') or '').lower()
         fault = _normalise_text(r.get('Fault', ''))
-        if not make:
-            continue
+        if not make: continue
 
         make_ok = (make in text_lower) or (_fuzzy_ratio(make, text_lower)
                                            >= 80)
-        if not make_ok:
-            continue
+        if not make_ok: continue
         model_ok = bool(model) and ((model in text_lower) or
                                     (_fuzzy_ratio(model, text_lower) >= 80))
 
         fault_tokens = set(fault.split()) - stop
         overlap = len(set(symptom_words) & fault_tokens)
-        if overlap == 0:
-            continue
+        if overlap == 0: continue
 
         score = overlap * 15 + (6 if make_ok else 0) + (4 if model_ok else 0)
         if year and any(y and y in text_lower for y in year.split('-')):
@@ -335,8 +1017,7 @@ def top_reddit_insight_blob(make: str, model: str, max_rows: int = 3) -> str:
             (int(r.get("confidence", 0) or 0), int(r.get("upvotes", 0) or 0)),
             reverse=True)
         rows = rows[:max_rows]
-        if not rows:
-            return ""
+        if not rows: return ""
         lines = [
             f"- {(r.get('component') or 'component?')} | {(r.get('symptom') or 'symptom?')} | {(r.get('fix_summary') or '')[:200]}"
             for r in rows
@@ -347,7 +1028,7 @@ def top_reddit_insight_blob(make: str, model: str, max_rows: int = 3) -> str:
 
 
 # ───────────────────────── AI + logging ─────────────────────────
-def ask_ai(user_text: str, csv_context: str | None):
+def ask_ai(user_text: str, csv_context: str | None, codes_context: str | None):
     if ss.api_calls_today > 100:
         return "⚠️ Daily usage limit reached. Please try again tomorrow."
     msgs = [{"role": "system", "content": SYS_PROMPT}]
@@ -368,6 +1049,8 @@ def ask_ai(user_text: str, csv_context: str | None):
             note += f"\n\n[Community Insights]\n{comm}"
     if csv_context:
         note += "\n\n[Database Match Found: A known issue was matched from our CSV.]"
+    if codes_context:
+        note += f"\n\n[OBD Codes]\n{codes_context}"
 
     msgs.append({"role": "user", "content": user_text + note})
     try:
@@ -412,7 +1095,7 @@ def _get_mot_access_token() -> str | None:
             "client_id": cid,
             "client_secret": csec,
             "grant_type": "client_credentials",
-            "scope": scope,
+            "scope": scope
         }
         r = requests.post(tok, data=data, timeout=12)
         st.sidebar.caption(f"🔑 MOT token status: {r.status_code}")
@@ -428,7 +1111,8 @@ def _get_mot_access_token() -> str | None:
     return None
 
 
-def _mot_lookup(vrm: str) -> dict | None:
+@st.cache_data(show_spinner=False, ttl=900)
+def _mot_lookup_cached(vrm: str) -> dict | None:
     mot_key = os.environ.get("MOT_API_KEY", "")
     if not mot_key:
         return None
@@ -456,7 +1140,6 @@ def _mot_lookup(vrm: str) -> dict | None:
                 v = data
             else:
                 return None
-
             return {
                 "registrationNumber":
                 vrm,
@@ -488,37 +1171,45 @@ def _mot_lookup(vrm: str) -> dict | None:
     return None
 
 
+@st.cache_data(show_spinner=False, ttl=900)
+def _dvla_lookup_cached(vrm: str, dvla_key: str) -> dict | None:
+    try:
+        st.sidebar.markdown(f"🔎 **DVLA API** called for `{vrm}` →")
+        headers = {
+            "x-api-key": dvla_key,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        r = requests.post(
+            "https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles",
+            headers=headers,
+            json={"registrationNumber": vrm},
+            timeout=12)
+        st.sidebar.caption(f"Status: {r.status_code}")
+        if r.ok:
+            dvla = r.json() or {}
+            dvla["_source"] = "DVLA"
+            return dvla
+        else:
+            st.sidebar.warning("⚠️ DVLA API failed →")
+            try:
+                st.sidebar.code(r.text[:400])
+            except Exception:
+                pass
+    except Exception as e:
+        st.sidebar.caption(f"DVLA error: {e}")
+    return None
+
+
 def vehicle_lookup(reg_number: str) -> dict | None:
     vrm = (reg_number or "").replace(" ", "").upper()
-    mot = _mot_lookup(vrm)
+    mot = _mot_lookup_cached(vrm)
     if mot:
         return mot
     if DVLA_KEY:
-        try:
-            st.sidebar.markdown(f"🔎 **DVLA API** called for `{vrm}` →")
-            headers = {
-                "x-api-key": DVLA_KEY,
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-            r = requests.post(
-                "https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles",
-                headers=headers,
-                json={"registrationNumber": vrm},
-                timeout=12)
-            st.sidebar.caption(f"Status: {r.status_code}")
-            if r.ok:
-                dvla = r.json() or {}
-                dvla["_source"] = "DVLA"
-                return dvla
-            else:
-                st.sidebar.warning("⚠️ DVLA API failed →")
-                try:
-                    st.sidebar.code(r.text[:400])
-                except Exception:
-                    pass
-        except Exception as e:
-            st.sidebar.caption(f"DVLA error: {e}")
+        dvla = _dvla_lookup_cached(vrm, DVLA_KEY)
+        if dvla:
+            return dvla
     return None
 
 
@@ -528,6 +1219,11 @@ def display_chat_message(role, content, message_type="normal", timestamp=None):
     if message_type == "csv":
         st.markdown(
             f'<div class="csv-message">{content}<div class="message-time">{html.escape(timestamp)}</div></div>',
+            unsafe_allow_html=True)
+        return
+    if message_type == "code":
+        st.markdown(
+            f'{content}<div class="message-time">{html.escape(timestamp)}</div>',
             unsafe_allow_html=True)
         return
     safe = html.escape(str(content)).replace("\n", "<br>")
@@ -545,9 +1241,6 @@ def display_chat_message(role, content, message_type="normal", timestamp=None):
 
 
 # ────────────── HEADER ──────────────
-import base64, pathlib
-
-
 def _inline_svg(path: str) -> str:
     with open(path, "rb") as f:
         b64 = base64.b64encode(f.read()).decode()
@@ -584,10 +1277,90 @@ st.markdown("""
 # ───────────────────────── Sidebar ─────────────────────────
 st.sidebar.title("📑 Menu")
 
+# ────────────── LOGIN/SIGNUP SECTION ──────────────
+if not ss.logged_in:
+    st.sidebar.markdown("## 🔐 Login Required")
+    st.sidebar.info("Create a free account to use OBDly")
+
+    tab1, tab2 = st.sidebar.tabs(["Login", "Sign Up"])
+
+    with tab1:
+        login_username = st.text_input("Username", key="login_username")
+        login_password = st.text_input("Password",
+                                       type="password",
+                                       key="login_password")
+
+        if st.button("Login", use_container_width=True, type="primary"):
+            if login_username and login_password:
+                success, user_id = verify_user(login_username, login_password)
+                if success:
+                    ss.logged_in = True
+                    ss.username = login_username
+                    ss.user_id = user_id
+                    st.success(f"✅ Welcome back, {login_username}!")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error("❌ Invalid username or password")
+            else:
+                st.warning("Please enter both username and password")
+
+    with tab2:
+        signup_username = st.text_input("Choose Username",
+                                        key="signup_username")
+        signup_password = st.text_input("Choose Password (min 6 chars)",
+                                        type="password",
+                                        key="signup_password")
+        signup_password2 = st.text_input("Confirm Password",
+                                         type="password",
+                                         key="signup_password2")
+
+        if st.button("Create Account",
+                     use_container_width=True,
+                     type="primary"):
+            if signup_username and signup_password and signup_password2:
+                if len(signup_username) < 3:
+                    st.error("Username must be at least 3 characters")
+                elif len(signup_password) < 6:
+                    st.error("Password must be at least 6 characters")
+                elif signup_password != signup_password2:
+                    st.error("Passwords don't match")
+                else:
+                    success, message = create_user(signup_username,
+                                                   signup_password)
+                    if success:
+                        st.success(f"✅ {message}")
+                        st.info("You can now login with your credentials!")
+                    else:
+                        st.error(f"❌ {message}")
+            else:
+                st.warning("Please fill in all fields")
+
+    st.sidebar.markdown("---")
+    st.sidebar.caption("🔒 Your data is private and secure")
+    # Stop here if not logged in
+    st.stop()
+
+# ────────────── LOGGED IN USER SECTION ──────────────
+st.sidebar.success(f"👤 Logged in as: **{ss.username}**")
+if st.sidebar.button("🚪 Logout", use_container_width=True):
+    # Clear all user data
+    ss.logged_in = False
+    ss.username = None
+    ss.user_id = None
+    ss.chat_messages = []
+    ss.vehicle = None
+    ss.conversation_started = False
+    ss.current_conversation_id = None
+    st.success("Logged out successfully!")
+    time.sleep(0.5)
+    st.rerun()
+
+st.sidebar.markdown("---")
+
 
 def _norm(s: str) -> str:
-    if s is None:
-        return ""
+    if s is None: return ""
     s = unicodedata.normalize("NFKC", s).replace("\r", "").replace("\n", "")
     return s.strip()
 
@@ -623,6 +1396,7 @@ if st.sidebar.button("🔄 New Conversation"):
     ss.processing_query = False
     ss.current_issue = None
     ss.current_conversation_id = None
+    ss.last_detected_codes = []
     st.rerun()
 
 if ss.vehicle:
@@ -653,8 +1427,10 @@ else:
     sidebar_images_text = f"📸 Images: {images_left}/3 today"
 st.sidebar.caption(sidebar_images_text)
 
+# Load data (cached)
 if not ss.csv_rows:
     load_fault_data()
+ensure_obd_loaded()
 
 # ───────────────────────── Import pages ─────────────────────────
 try:
@@ -676,67 +1452,21 @@ if page == "ℹ️ About":
 elif page == "📊 Chat History":
     st.markdown("## 💬 Chat History")
 
-    # Load all conversations from enhanced log
+    if not ss.get("user_id"):
+        st.warning("Please login to view chat history")
+        st.stop()
+
     try:
-        conversations = {}
-
-        # Try to load from new format first
-        try:
-            with open("conversations.json", "r", encoding="utf-8") as f:
-                conversations = json.load(f)
-        except FileNotFoundError:
-            pass
-
-        # Also check old CSV format and migrate
-        try:
-            with open("chat_log.csv", "r", encoding="utf-8") as f:
-                rows = list(csv.DictReader(f))
-                if rows and not conversations:
-                    # Create a single conversation from old logs
-                    conv_id = "legacy_" + datetime.now().strftime(
-                        "%Y%m%d_%H%M%S")
-                    conversations[conv_id] = {
-                        "id":
-                        conv_id,
-                        "created":
-                        rows[0].get("Timestamp", ""),
-                        "updated":
-                        rows[-1].get("Timestamp", ""),
-                        "vehicle":
-                        rows[0].get("Reg", "N/A"),
-                        "messages": [],
-                        "first_message":
-                        rows[0].get("User Message", "")[:50] if rows else ""
-                    }
-                    for r in rows:
-                        conversations[conv_id]["messages"].append({
-                            "role":
-                            "user",
-                            "content":
-                            r.get("User Message", ""),
-                            "timestamp":
-                            r.get("Timestamp", "")
-                        })
-                        conversations[conv_id]["messages"].append({
-                            "role":
-                            "assistant",
-                            "content":
-                            r.get("AI Response", ""),
-                            "timestamp":
-                            r.get("Timestamp", "")
-                        })
-        except Exception:
-            pass
+        # Get only THIS user's conversations
+        conversations = get_user_conversations(ss.user_id)
 
         if not conversations:
             st.info(
                 "No chat history yet. Start a conversation to see it here!")
         else:
-            # Sort by most recent first
             sorted_convs = sorted(conversations.items(),
                                   key=lambda x: x[1].get("updated", ""),
                                   reverse=True)
-
             st.caption(
                 f"📚 {len(sorted_convs)} conversation{'s' if len(sorted_convs) != 1 else ''} saved"
             )
@@ -755,41 +1485,28 @@ elif page == "📊 Chat History":
                     st.markdown(f"**First message:** {first_msg}...")
 
                     col1, col2, col3 = st.columns([2, 2, 3])
-
                     with col1:
                         if st.button("▶️ Resume Chat",
                                      key=f"resume_{conv_id}",
                                      use_container_width=True):
-                            # Load this conversation into current session
                             ss.chat_messages = conv.get("messages", [])
                             ss.conversation_started = True
                             ss.current_conversation_id = conv_id
-
-                            # Try to restore vehicle info
                             if vehicle and vehicle != "N/A":
-                                # You might want to do a fresh lookup here
                                 ss.vehicle = {"registrationNumber": vehicle}
-
                             st.success(
                                 f"✅ Loaded conversation from {created[:10]}")
                             st.info("👉 Go to 'Chat with OBDly' to continue")
                             time.sleep(1)
                             st.rerun()
-
                     with col2:
                         if st.button("🗑️ Delete",
                                      key=f"delete_{conv_id}",
                                      use_container_width=True):
-                            del conversations[conv_id]
-                            # Save updated conversations
-                            with open("conversations.json",
-                                      "w",
-                                      encoding="utf-8") as f:
-                                json.dump(conversations, f, indent=2)
+                            delete_user_conversation(ss.user_id, conv_id)
                             st.success("Deleted!")
                             time.sleep(0.5)
                             st.rerun()
-
                     with col3:
                         st.caption(
                             f"Last updated: {conv.get('updated', 'Unknown')[:16]}"
@@ -797,23 +1514,17 @@ elif page == "📊 Chat History":
 
                     st.markdown("---")
                     st.markdown("**Conversation Preview:**")
-                    for msg in conv.get("messages",
-                                        [])[-6:]:  # Show last 6 messages
+                    for msg in conv.get("messages", [])[-6:]:
                         role_icon = "👤" if msg["role"] == "user" else "🤖"
                         st.markdown(
                             f"{role_icon} **{msg['role'].title()}:** {msg['content'][:150]}..."
                         )
-
                     if len(conv.get("messages", [])) > 6:
                         st.caption(
                             f"... and {len(conv.get('messages', [])) - 6} more messages"
                         )
-
     except Exception as e:
         st.error(f"Error loading chat history: {e}")
-        st.info(
-            "Your chat history might be in the old format. It will be migrated when you start a new chat."
-        )
 
 elif page == "🛠️ Share Your Fix":
     try:
@@ -855,15 +1566,12 @@ else:  # 💬 Chat with OBDly
         st.markdown(
             "<div class='obd-title' style='text-align:center;'>🔎 Quick Start: Lookup by Registration (Optional)</div>",
             unsafe_allow_html=True)
-
         col1, col2, col3 = st.columns([1, 2, 1])
-
         with col2:
             reg = st.text_input("Enter your registration",
                                 placeholder="AB12 CDE",
                                 label_visibility="collapsed",
                                 key="reg_input")
-
             if st.button("Look Up",
                          use_container_width=True,
                          key="reg_lookup_btn"):
@@ -881,17 +1589,14 @@ else:  # 💬 Chat with OBDly
                             fuel = str(v.get('fuelType') or '')
                             engine = str(v.get('engineCapacity') or '')
                             desc = f"✅ Vehicle found: {make}"
-                            if model:
-                                desc += f" {model}"
-                            if year:
-                                desc += f" {year}"
+                            if model: desc += f" {model}"
+                            if year: desc += f" {year}"
                             extras = [
                                 d for d in
-                                [colour, fuel, (engine and f"[{engine}cc]")]
+                                [colour, fuel, (engine and f'[{engine}cc]')]
                                 if d
                             ]
-                            if extras:
-                                desc += " • " + " ".join(extras)
+                            if extras: desc += " • " + " ".join(extras)
                             src = v.get("_source") or "DVLA"
                             desc += f"  •  Source: {src}"
                             ss.chat_messages.append({
@@ -907,7 +1612,6 @@ else:  # 💬 Chat with OBDly
                             st.warning(
                                 "Vehicle not found. You can still chat without registration."
                             )
-
         st.markdown("</div>", unsafe_allow_html=True)
         st.markdown("<div class='obd-divider'><span>OR</span></div>",
                     unsafe_allow_html=True)
@@ -931,23 +1635,15 @@ else:  # 💬 Chat with OBDly
                                  msg.get("type", "normal"),
                                  msg.get("timestamp", ""))
 
-    # Thinking indicator only while processing - KITT SCANNER
+    # Thinking indicator
     if ss.processing_query:
         st.markdown('''
         <style>
-        @keyframes kitt-scan{
-            0%{left:-60px;}
-            50%{left:calc(100% - 0px);}
-            100%{left:-60px;}
-        }
-        .scanner-light{
-            animation:kitt-scan 1s infinite ease-in-out !important;
-        }
+        @keyframes kitt-scan{0%{left:-60px;}50%{left:calc(100% - 0px);}100%{left:-60px;}}
+        .scanner-light{animation:kitt-scan 1s infinite ease-in-out !important;}
         </style>
         <div class="typing-indicator">
-          <div class="scanner-container">
-            <div class="scanner-light"></div>
-          </div>
+          <div class="scanner-container"><div class="scanner-light"></div></div>
         </div>
         ''',
                     unsafe_allow_html=True)
@@ -975,12 +1671,10 @@ else:  # 💬 Chat with OBDly
             (m["content"]
              for m in reversed(ss.chat_messages) if m["role"] == "user"), None)
         if last_user_msg:
-            # CHECK IF USER IS ASKING ABOUT A REGISTRATION
+            # 1) REG DETECTION & LOOKUP
             is_reg_query, detected_reg = detect_registration_request(
                 last_user_msg)
-
             if is_reg_query and detected_reg:
-                # AUTO-LOOKUP THE REGISTRATION
                 with st.spinner(f"🔍 Looking up {detected_reg}..."):
                     v = vehicle_lookup(detected_reg)
                     if v:
@@ -993,30 +1687,22 @@ else:  # 💬 Chat with OBDly
                         fuel = str(v.get('fuelType') or '')
                         engine = str(v.get('engineCapacity') or '')
 
-                        # Build detailed response
                         vehicle_info = f"🚗 **Vehicle Found: {detected_reg}**\n\n"
                         vehicle_info += f"**Make & Model:** {make} {model}\n"
-                        if year:
-                            vehicle_info += f"**Year:** {year}\n"
-                        if colour:
-                            vehicle_info += f"**Colour:** {colour}\n"
-                        if fuel:
-                            vehicle_info += f"**Fuel Type:** {fuel}\n"
-                        if engine:
-                            vehicle_info += f"**Engine:** {engine}cc\n"
+                        if year: vehicle_info += f"**Year:** {year}\n"
+                        if colour: vehicle_info += f"**Colour:** {colour}\n"
+                        if fuel: vehicle_info += f"**Fuel Type:** {fuel}\n"
+                        if engine: vehicle_info += f"**Engine:** {engine}cc\n"
 
                         mot_status = v.get('motStatus', '')
                         if mot_status:
                             vehicle_info += f"**MOT Status:** {mot_status}\n"
-
                         mot_expiry = v.get('motExpiryDate', '')
                         if mot_expiry:
                             vehicle_info += f"**MOT Expiry:** {mot_expiry}\n"
-
                         src = v.get("_source") or "DVLA"
                         vehicle_info += f"\n*Data source: {src}*"
 
-                        # Add to chat
                         ss.chat_messages.append({
                             "role":
                             "assistant",
@@ -1025,8 +1711,6 @@ else:  # 💬 Chat with OBDly
                             "timestamp":
                             datetime.now().strftime("%H:%M")
                         })
-
-                        # Ask if they need help with this vehicle
                         follow_up = f"Great! I've loaded the details for your {make} {model}. What can I help you with? Any issues or questions about this vehicle?"
                         ss.chat_messages.append({
                             "role":
@@ -1036,13 +1720,15 @@ else:  # 💬 Chat with OBDly
                             "timestamp":
                             datetime.now().strftime("%H:%M")
                         })
-
                         save_conversation()
                         ss.processing_query = False
                         st.rerun()
                     else:
-                        # Registration not found
-                        error_msg = f"❌ Sorry, I couldn't find any vehicle details for registration **{detected_reg}**.\n\nThis could mean:\n- The registration doesn't exist\n- There's a typo in the registration\n- The vehicle isn't registered in the UK\n\nCould you double-check the registration number? Or feel free to tell me about your car issue and I can still help!"
+                        error_msg = (
+                            f"❌ Sorry, I couldn't find any vehicle details for registration **{detected_reg}**.\n\n"
+                            f"This could mean:\n- The registration doesn't exist\n- There's a typo in the registration\n- The vehicle isn't registered in the UK\n\n"
+                            f"Could you double-check the registration number? Or feel free to tell me about your car issue and I can still help!"
+                        )
                         ss.chat_messages.append({
                             "role":
                             "assistant",
@@ -1055,13 +1741,80 @@ else:  # 💬 Chat with OBDly
                         ss.processing_query = False
                         st.rerun()
 
-            # NORMAL AI PROCESSING (if not a reg query)
+                        # 2) OBD CODE DETECTION & CARDS
+            ensure_obd_loaded()
+            detected_codes = find_obd_codes_in_text(last_user_msg)
+            ss.last_detected_codes = detected_codes or []
+
+            # Infer make/model from the user's message; prefer actual VRM if present
+            inf_make, inf_model = detect_make_model_from_text(last_user_msg)
+            if ss.vehicle and (ss.vehicle.get("make")
+                               or ss.vehicle.get("model")):
+                vmake = (ss.vehicle.get("make") or "").lower()
+                vmodel = (ss.vehicle.get("model") or "").lower()
+                if vmake:
+                    inf_make = vmake
+                if vmodel:
+                    inf_model = vmodel
+
+            vehicle_hint = None
+            if inf_make:
+                vehicle_hint = (inf_make or "") + (" " + (inf_model or "")
+                                                   if inf_model else "")
+                ss.chat_messages.append({
+                    "role":
+                    "assistant",
+                    "content":
+                    f"ℹ️ Interpreting for **{vehicle_hint.title()}** based on your message.",
+                    "timestamp":
+                    datetime.now().strftime("%H:%M")
+                })
+
+            codes_card_html = ""
+            codes_context_text = ""
+            if detected_codes:
+                blocks = []
+                for c in detected_codes:
+                    entry = ss.obd_codes.get(c)
+                    if entry:
+                        # IMPORTANT: keep_make filters out off-brand lines (e.g., 'Mercedes...')
+                        blocks.append(
+                            render_code_card(c, entry, keep_make=inf_make))
+                        short_causes = ", ".join(
+                            map(str,
+                                entry.get("causes") or []))[:220]
+                        short_fixes = ", ".join(
+                            map(str,
+                                entry.get("fixes") or []))[:220]
+                        line = f"{c}: {entry.get('title') or entry.get('description') or ''}".strip(
+                        )
+                        if short_causes: line += f" | causes: {short_causes}"
+                        if short_fixes: line += f" | fixes: {short_fixes}"
+                        codes_context_text += ("- " + line + "\n")
+                    else:
+                        blocks.append(
+                            f"<div class='code-message'><strong>{html.escape(c)}</strong> — No local details found.</div>"
+                        )
+                        codes_context_text += f"- {c}: (no local details found)\n"
+                codes_card_html = "<div style='display:flex;flex-direction:column;gap:8px'>" + "".join(
+                    blocks) + "</div>"
+                ss.chat_messages.append({
+                    "role":
+                    "assistant",
+                    "content":
+                    codes_card_html,
+                    "type":
+                    "code",
+                    "timestamp":
+                    datetime.now().strftime("%H:%M")
+                })
+
+            # 3) CSV KNOWN-FAULT MATCH
             enriched = last_user_msg
             if ss.vehicle:
                 v = ss.vehicle
                 enriched = f"{v.get('make','')} {v.get('model','')} {v.get('yearOfManufacture','')} {last_user_msg}"
-
-            csv_card, _ = csv_match(enriched)
+            csv_card, _score = csv_match(enriched)
             ss.csv_match_found = bool(csv_card)
             if csv_card:
                 ss.chat_messages.append({
@@ -1075,7 +1828,14 @@ else:  # 💬 Chat with OBDly
                     datetime.now().strftime("%H:%M")
                 })
 
-            ai_response = ask_ai(last_user_msg, csv_card)
+            # 4) AI ANSWER (first)
+            extra_user = last_user_msg  # safe default
+            if inf_make:
+                extra_user = f"{inf_make} {inf_model or ''} {last_user_msg}".strip(
+                )
+            ai_response = ask_ai(
+                extra_user, csv_card,
+                (codes_context_text if detected_codes else None))
             ss.chat_messages.append({
                 "role":
                 "assistant",
@@ -1084,13 +1844,44 @@ else:  # 💬 Chat with OBDly
                 "timestamp":
                 datetime.now().strftime("%H:%M")
             })
+
+            # 5) Quick, vehicle-aware NEXT STEPS (after the AI answer)
+            if detected_codes:
+                for code in detected_codes:
+                    rules = NEXT_STEPS_RULES.get(code.upper())
+                    if not rules:
+                        continue
+                    lines = list(rules.get("generic", []))
+                    if inf_make == "ford":
+                        if ("diesel" in last_user_msg.lower()
+                                or "tdci" in last_user_msg.lower()):
+                            lines += rules.get("ford_diesel", [])
+                        else:
+                            lines += rules.get("ford", [])
+                    if lines:
+                        bullets = "\n".join([f"• {x}" for x in lines])
+                        next_steps_msg = (
+                            f"**Next steps for {code.upper()}**"
+                            f"{(' — ' + vehicle_hint.title()) if vehicle_hint else ''}:\n\n"
+                            f"{bullets}\n\n"
+                            f"Typical UK costs: plugs £12–20 each, coil packs £25–60 each; indie labour £50–£80/hr."
+                        )
+                        ss.chat_messages.append({
+                            "role":
+                            "assistant",
+                            "content":
+                            next_steps_msg,
+                            "timestamp":
+                            datetime.now().strftime("%H:%M")
+                        })
+
             log_interaction(last_user_msg, ai_response, ss.csv_match_found)
-            save_conversation()  # AUTO-SAVE CONVERSATION
+            save_conversation()
             ss.show_repair_options = True
             ss.processing_query = False
             st.rerun()
 
-    # Scroll to top of chat area after new turn - ONLY when actually needed
+    # Scroll after new turn
     if ss.get("scroll_needed", False) and len(
             ss.chat_messages) > 1 and ss.conversation_started:
         components.html("""
@@ -1145,10 +1936,7 @@ else:  # 💬 Chat with OBDly
                                     uploaded_file, context)
                                 log_image_analysis(uploaded_file.name,
                                                    analysis)
-
-                                # Show car identification confirmation if detected
                                 show_car_identification_confirmation()
-
                                 ss.conversation_started = True
                                 ss.chat_messages.append({
                                     "role":
@@ -1170,8 +1958,7 @@ else:  # 💬 Chat with OBDly
                                 ss.current_issue = f"Image: {uploaded_file.name}"
                                 ss.show_repair_options = True
                                 ss.scroll_needed = True
-                                save_conversation(
-                                )  # SAVE AFTER IMAGE ANALYSIS
+                                save_conversation()
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Image analysis unavailable: {e}")

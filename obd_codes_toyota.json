@@ -1,0 +1,44 @@
+{
+  "P0420": {
+    "title": "Catalyst System Efficiency Below Threshold (Bank 1)",
+    "desc": "Common on Toyota petrols—aging cat or upstream O2 bias.",
+    "common_causes": ["Aged catalytic converter", "Air/fuel ratio sensor drift", "Exhaust leak", "Rich/lean fueling history"],
+    "tests": ["Front vs rear O2 switching rate", "Fuel trims check", "Exhaust leak test near manifold"],
+    "severity": "drive_sparingly"
+  },
+  "P0171": {
+    "title": "System Too Lean (Bank 1)",
+    "desc": "Frequent on Corolla, Yaris, Avensis; often MAF or intake leak.",
+    "common_causes": ["Dirty MAF sensor", "Intake hose crack", "Exhaust leak before O2", "PCV hose off"],
+    "tests": ["Clean/replace MAF", "Smoke test intake", "Check fuel trims", "Inspect O2 sensor"],
+    "severity": "drive_sparingly"
+  },
+  "P0401": {
+    "title": "EGR Flow Insufficient",
+    "desc": "Diesel D-CAT and petrol EGR passages clog easily.",
+    "common_causes": ["Blocked EGR valve/passage", "DPF soot loading (diesel)", "Vacuum control fault"],
+    "tests": ["Command EGR test; monitor MAP drop", "Inspect passages for carbon", "Clean/replace valve"],
+    "severity": "drive_sparingly"
+  },
+  "P0101": {
+    "title": "MAF Circuit Range/Performance",
+    "desc": "MAF output implausible vs load—often contamination.",
+    "common_causes": ["Contaminated MAF", "Vacuum leak downstream", "Aftermarket oiled filter"],
+    "tests": ["Clean with MAF cleaner only", "Check intake duct seals", "Compare MAF g/s to spec"],
+    "severity": "drive_sparingly"
+  },
+  "P1604": {
+    "title": "Startability Malfunction",
+    "desc": "Toyota-specific code for poor cranking/start behaviour.",
+    "common_causes": ["Weak battery", "Low fuel pressure", "MAF/IAC issues", "Cold start injector fault"],
+    "tests": ["Monitor cranking RPM & injection pulse", "Fuel pressure test", "IAC/MAF inspection"],
+    "severity": "drive_sparingly"
+  },
+  "P242F": {
+    "title": "DPF Restriction – Ash Accumulation (D-CAT)",
+    "desc": "DPF life reached; ash buildup.",
+    "common_causes": ["DPF end-of-life", "Oil ash contamination", "Incorrect oil spec"],
+    "tests": ["Check DPF differential pressure", "Assess ash load", "Consider DPF clean or replace"],
+    "severity": "drive_sparingly"
+  }
+}

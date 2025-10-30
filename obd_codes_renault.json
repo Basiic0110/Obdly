@@ -1,0 +1,37 @@
+{
+  "P2002": {
+    "title": "DPF Efficiency Below Threshold (Renault/Nissan dCi)",
+    "desc": "Very common on 1.5/1.6 dCi engines; failed regen or sensor error.",
+    "common_causes": ["Blocked DPF", "Faulty EGT/diff pressure sensors", "Short-trip driving"],
+    "tests": ["Diff pressure PID check", "Sensor tests", "Forced regen"],
+    "severity": "drive_sparingly"
+  },
+  "P0380": {
+    "title": "Glow Plug/Heater Circuit 'A'",
+    "desc": "Glow plug relay circuit or plug failure.",
+    "common_causes": ["Blown glow plug", "Relay fault", "Wiring corrosion"],
+    "tests": ["Measure plug resistance", "Relay output test", "Inspect wiring"],
+    "severity": "safe"
+  },
+  "P0130": {
+    "title": "O2 Sensor Circuit (Bank 1 Sensor 1)",
+    "desc": "O2 sensor or wiring issue; common on petrol models.",
+    "common_causes": ["Sensor aging", "Heater open", "Wiring fault"],
+    "tests": ["Voltage sweep test", "Heater resistance", "Inspect harness"],
+    "severity": "drive_sparingly"
+  },
+  "P1453": {
+    "title": "DPF Differential Pressure Sensor Signal Fault",
+    "desc": "Invalid DPF pressure signal.",
+    "common_causes": ["Sensor drift", "Blocked hose", "Wiring"],
+    "tests": ["Compare to atmospheric", "Clean hoses", "Replace sensor"],
+    "severity": "drive_sparingly"
+  },
+  "P0488": {
+    "title": "EGR Throttle Position Control Range/Performance",
+    "desc": "EGR throttle butterfly stuck/dirty.",
+    "common_causes": ["Soot buildup", "Motor fault", "Connector corrosion"],
+    "tests": ["Command test via scan tool", "Clean/replace throttle", "Check wiring"],
+    "severity": "drive_sparingly"
+  }
+}

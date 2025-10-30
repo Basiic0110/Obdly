@@ -1,0 +1,37 @@
+{
+  "P0016": {
+    "title": "Crankshaft/Camshaft Correlation Error (Bank 1)",
+    "desc": "Common on M271/M274—timing chain stretch or adjuster fault.",
+    "common_causes": ["Timing chain stretch", "Cam adjuster wear", "Oil sludge", "Sensor misread"],
+    "tests": ["Scope cam/crank correlation", "Check chain elongation with scan tool", "Oil pressure check"],
+    "severity": "drive_sparingly"
+  },
+  "P0300": {
+    "title": "Multiple Cylinder Misfire",
+    "desc": "Mercedes petrols often suffer coilpack or injector issues.",
+    "common_causes": ["Coilpacks", "Injectors", "Worn plugs", "Vacuum leaks"],
+    "tests": ["Swap test coils", "Check short-term trims", "Compression check"],
+    "severity": "drive_sparingly"
+  },
+  "P2002": {
+    "title": "DPF Efficiency Below Threshold (CDI)",
+    "desc": "Frequent on OM642/OM651 diesels with DPF regen failure.",
+    "common_causes": ["Failed regens", "Blocked DPF", "Faulty differential pressure sensor"],
+    "tests": ["Diff pressure at idle/load", "EGT sensor readings", "Forced regen after fixing root"],
+    "severity": "drive_sparingly"
+  },
+  "P2453": {
+    "title": "DPF Differential Pressure Sensor Performance",
+    "desc": "Sensor or hoses giving implausible readings.",
+    "common_causes": ["Sensor drift", "Cracked hose", "Blocked port"],
+    "tests": ["Inspect hoses", "Measure KOEO voltage", "Replace sensor if drifted"],
+    "severity": "drive_sparingly"
+  },
+  "P0171": {
+    "title": "System Too Lean (Bank 1)",
+    "desc": "Often due to MAF or crankcase ventilation issues.",
+    "common_causes": ["MAF contamination", "Vacuum leaks", "Oil separator leaks"],
+    "tests": ["Clean/replace MAF", "Smoke test", "Check breather hoses"],
+    "severity": "drive_sparingly"
+  }
+}

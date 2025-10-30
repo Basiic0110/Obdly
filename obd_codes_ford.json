@@ -1,0 +1,51 @@
+{
+  "P0401": {
+    "title": "EGR Flow Insufficient Detected (Ford DPFE)",
+    "desc": "Classic DPFE sensor/EGR valve/cooler issue on many Duratec/TDCi.",
+    "common_causes": ["DPFE sensor drift/failure", "Carboned EGR passages", "Vacuum supply issues"],
+    "tests": ["DPFE signal vs command test", "Manually lift EGR (vac type)", "Clean passages/cooler"],
+    "severity": "drive_sparingly"
+  },
+  "P2110": {
+    "title": "Throttle Actuator Control System – Forced Limited RPM",
+    "desc": "ETC safety strategy triggered by other faults.",
+    "common_causes": ["APP/TPS correlation (P2135)", "MAF/MAP discrepancies", "Boost faults"],
+    "tests": ["Resolve root codes first", "ETC relearn", "Check throttle body and wiring"],
+    "severity": "drive_sparingly"
+  },
+  "P0299": {
+    "title": "Turbo Underboost (TDCi/EcoBoost)",
+    "desc": "Boost not meeting target.",
+    "common_causes": ["Split intercooler hose", "Cracked plastic pipe", "Wastegate actuator or solenoid", "VNT sticking (diesel)"],
+    "tests": ["Smoke/pressure test", "Actuate wastegate/VNT", "Requested vs actual boost logs"],
+    "severity": "drive_sparingly"
+  },
+  "P0420": {
+    "title": "Catalyst Efficiency Low (Ford)",
+    "desc": "Aged cat or fueling/ignition root cause.",
+    "common_causes": ["Aged converter", "Misfires", "O2/A/F sensor aging"],
+    "tests": ["Front/rear O2 switching", "Mode 6 misfire", "Exhaust leaks"],
+    "severity": "drive_sparingly"
+  },
+  "P1450": {
+    "title": "Unable to Bleed Up Fuel Tank Vacuum (EVAP)",
+    "desc": "Tank vacuum too high—venting problem.",
+    "common_causes": ["Stuck closed canister vent valve", "Blocked canister/lines", "Kinked hose"],
+    "tests": ["Command vent valve", "Smoke test EVAP lines", "Check canister for charcoal debris"],
+    "severity": "safe"
+  },
+  "P0191": {
+    "title": "Fuel Rail Pressure Sensor Range/Performance (Ford)",
+    "desc": "FRP signal implausible.",
+    "common_causes": ["FRP sensor failure", "5V ref shared short", "Harness rub-through"],
+    "tests": ["5V ref integrity with other sensors unplugged", "Scope signal", "Wiggle-test"],
+    "severity": "drive_sparingly"
+  },
+  "P0301": {
+    "title": "Cylinder 1 Misfire (COP common)",
+    "desc": "Coil-on-plug failures are common on Ford petrols.",
+    "common_causes": ["COP failure", "Plug gap/age", "Injector fault"],
+    "tests": ["Swap coil test", "Fuel trim review", "Compression if persistent"],
+    "severity": "drive_sparingly"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "P0420": {
+    "title": "Catalyst System Efficiency Below Threshold",
+    "desc": "Very common on i-VTEC engines; often due to O2 sensor aging or lean trims.",
+    "common_causes": ["Aged cat", "Front O2/A/F sensor slow", "Exhaust leak", "Fuel trim imbalance"],
+    "tests": ["Monitor O2 activity (front vs rear)", "Fuel trims at cruise", "Check misfire counters"],
+    "severity": "drive_sparingly"
+  },
+  "P0171": {
+    "title": "System Too Lean (Bank 1)",
+    "desc": "Frequent on Civics and Jazz; intake leaks or PCV valve issues.",
+    "common_causes": ["Vacuum leak", "PCV stuck open", "Dirty MAF/MAP", "Fuel pressure low"],
+    "tests": ["Smoke test intake", "Clean MAF/MAP", "Check PCV valve", "Measure fuel pressure"],
+    "severity": "drive_sparingly"
+  },
+  "P2646": {
+    "title": "VTEC Oil Pressure Switch Circuit Low Voltage",
+    "desc": "Low oil pressure or solenoid/switch fault in VTEC system.",
+    "common_causes": ["Low oil level/pressure", "Faulty VTEC solenoid", "Blocked oil passages"],
+    "tests": ["Check oil level/grade", "Clean or replace VTEC solenoid", "Verify pressure with gauge"],
+    "severity": "drive_sparingly"
+  },
+  "P0301": {
+    "title": "Cylinder 1 Misfire",
+    "desc": "Often coil or plug related on R18/K20 engines.",
+    "common_causes": ["Ignition coil", "Spark plug wear", "Fuel injector issue"],
+    "tests": ["Swap coil", "Check plug gap", "Injector balance test"],
+    "severity": "drive_sparingly"
+  },
+  "P1456": {
+    "title": "EVAP System Leak (Fuel Tank Area)",
+    "desc": "Small EVAP leak—often fuel cap or vent valve.",
+    "common_causes": ["Loose fuel cap", "Vent shut valve leak", "Cracked hose"],
+    "tests": ["Tighten/replace cap", "Smoke test EVAP system"],
+    "severity": "safe"
+  }
+}

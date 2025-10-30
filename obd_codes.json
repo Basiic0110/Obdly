@@ -1,0 +1,870 @@
+{
+  "P0001": {
+    "title": "Fuel Volume Regulator Control Circuit/Open",
+    "desc": "Open circuit in fuel volume regulator control. May cause hard start or no-start.",
+    "common_causes": ["Wiring open at fuel volume regulator", "Defective fuel volume regulator/IMV", "ECM driver fault", "Connector corrosion"],
+    "tests": ["Command IMV with scan tool; monitor duty cycle and rail pressure", "Backprobe regulator ground/reference", "Check continuity from IMV to ECM"],
+    "severity": "drive_sparingly"
+  },
+  "P0002": {
+    "title": "Fuel Volume Regulator Control Circuit Range/Performance",
+    "desc": "Regulator not achieving commanded rail pressure range.",
+    "common_causes": ["Restricted fuel supply", "Weak HP pump", "Sticking IMV", "Internal rail leak"],
+    "tests": ["Fuel supply volume test", "Rail pressure vs command during snap-throttle", "Scope IMV PWM vs pressure change"],
+    "severity": "drive_sparingly"
+  },
+  "P0003": {
+    "title": "Fuel Volume Regulator Control Circuit Low",
+    "desc": "Low control signal detected to fuel volume regulator.",
+    "common_causes": ["Short-to-ground on control wire", "Failed IMV coil", "ECM driver issue"],
+    "tests": ["Measure coil resistance", "Check for short-to-ground", "Substitute known-good IMV if possible"],
+    "severity": "drive_sparingly"
+  },
+  "P0004": {
+    "title": "Fuel Volume Regulator Control Circuit High",
+    "desc": "High control circuit voltage to regulator.",
+    "common_causes": ["Short-to-battery 12V on control circuit", "Harness damage", "ECM driver fault"],
+    "tests": ["Wiggle-test harness", "Voltage drop tests", "Inspect for rubbed-through loom"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0087": {
+    "title": "Fuel Rail/System Pressure – Too Low",
+    "desc": "Measured rail pressure below commanded. Hard start, power loss.",
+    "common_causes": ["Clogged fuel filter", "Weak HP pump", "Leaking injector/rail", "Low tank fuel", "Air ingress on diesel"],
+    "tests": ["Live data: rail pressure vs command under load", "Low-pressure supply test (lift pump)", "Return flow test (diesel)"],
+    "severity": "drive_sparingly"
+  },
+  "P0089": {
+    "title": "Fuel Pressure Regulator Performance",
+    "desc": "Regulator not maintaining stable pressure.",
+    "common_causes": ["Faulty regulator/IMV", "Contaminated fuel", "ECM control fault"],
+    "tests": ["Commanded vs actual pressure graphs", "Check IMV duty response", "Inspect fuel for contamination"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0100": {
+    "title": "MAF Circuit Malfunction",
+    "desc": "Mass Air Flow circuit fault detected.",
+    "common_causes": ["Unplugged/failed MAF", "Wiring open/short", "Aftermarket oiled filter contamination"],
+    "tests": ["Check MAF grams/sec vs expected at idle/load", "Wiring voltage and ground checks", "Substitute known-good MAF"],
+    "severity": "drive_sparingly"
+  },
+  "P0101": {
+    "title": "MAF Circuit Range/Performance",
+    "desc": "MAF signal not plausible vs RPM/Load.",
+    "common_causes": ["Dirty MAF", "Air leaks downstream of MAF", "Restricted intake/exhaust", "Aftermarket intakes skewing readings"],
+    "tests": ["Smoke test intake for leaks", "Clean/replace MAF", "Compare MAF to MAP calc (speed-density cross-check)"],
+    "severity": "drive_sparingly"
+  },
+  "P0102": {
+    "title": "MAF Circuit Low",
+    "desc": "Low MAF signal.",
+    "common_causes": ["Wiring short-to-ground", "Dirty/faulty MAF", "Intake leak"],
+    "tests": ["Inspect wiring 5V ref & ground", "MAF live data check", "Smoke test intake"],
+    "severity": "drive_sparingly"
+  },
+  "P0103": {
+    "title": "MAF Circuit High",
+    "desc": "High MAF signal.",
+    "common_causes": ["Short-to-battery on signal", "Stuck MAF output", "Severe vacuum leak upstream"],
+    "tests": ["Backprobe signal voltage", "Pin-fit test connectors", "Substitute MAF"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0113": {
+    "title": "IAT Sensor 1 Circuit High (Intake Air Temp)",
+    "desc": "IAT reading implausibly high voltage (very cold).",
+    "common_causes": ["Open circuit to IAT", "Unplugged sensor", "Wiring damage"],
+    "tests": ["Measure resistance vs temperature chart", "Check 5V ref/ground", "Jiggle harness and watch PID"],
+    "severity": "safe"
+  },
+  "P0117": {
+    "title": "Engine Coolant Temp (ECT) Circuit Low",
+    "desc": "ECT voltage low (very hot). May trigger fans/limp.",
+    "common_causes": ["Short-to-ground on ECT signal", "Overheating engine", "Faulty ECT sensor"],
+    "tests": ["Infrared thermometer vs PID", "Check for air pockets/low coolant", "Sensor wiring inspection"],
+    "severity": "stop_driving"
+  },
+  "P0128": {
+    "title": "Coolant Thermostat (Coolant Temp Below Regulating Temp)",
+    "desc": "Engine not reaching target temperature within time.",
+    "common_causes": ["Stuck-open thermostat", "Low coolant", "ECT sensor bias"],
+    "tests": ["Warm-up graph of ECT vs time", "Check thermostat operation", "Coolant level and bleeding"],
+    "severity": "safe"
+  },
+
+  "P0170": {
+    "title": "Fuel Trim Malfunction (Bank 1)",
+    "desc": "Fuel trims out of control limits.",
+    "common_causes": ["Vacuum leak", "MAF/MAP errors", "Fuel pressure issues", "Exhaust leaks before O2"],
+    "tests": ["Short/long-term trims at idle/2500rpm", "Smoke test intake", "Fuel pressure test", "Exhaust leak check"],
+    "severity": "drive_sparingly"
+  },
+  "P0171": {
+    "title": "System Too Lean (Bank 1)",
+    "desc": "O2/AFR indicates lean mixture.",
+    "common_causes": ["Vacuum leak", "MAF underreporting", "Low fuel pressure", "Exhaust leak pre-cat"],
+    "tests": ["Fuel trims analysis", "Smoke test", "Fuel pressure/volume", "MAF grams/sec sanity check"],
+    "severity": "drive_sparingly"
+  },
+  "P0172": {
+    "title": "System Too Rich (Bank 1)",
+    "desc": "Mixture rich beyond control range.",
+    "common_causes": ["Leaking injector", "High fuel pressure", "Stuck-open purge", "MAF overreporting"],
+    "tests": ["Injector leak-down", "Fuel pressure test", "Purge command test (smoke)", "MAF comparison to MAP"],
+    "severity": "drive_sparingly"
+  },
+  "P0174": {
+    "title": "System Too Lean (Bank 2)",
+    "desc": "Bank 2 lean condition; often intake leak or MAF.",
+    "common_causes": ["Intake gasket leak (V engines)", "MAF underreporting", "Fuel supply issue"],
+    "tests": ["Bank-specific trims", "Smoke test near Bank 2", "Fuel pressure test"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0201": {
+    "title": "Injector Circuit/Open – Cylinder 1",
+    "desc": "Open or fault in injector 1 circuit.",
+    "common_causes": ["Open harness", "Bad injector coil", "ECM driver fault"],
+    "tests": ["Noid light test", "Injector resistance", "Wiring continuity ECM→injector"],
+    "severity": "drive_sparingly"
+  },
+  "P0202": {
+    "title": "Injector Circuit/Open – Cylinder 2",
+    "desc": "See P0201 pattern.",
+    "common_causes": ["Open harness", "Bad injector coil", "ECM driver fault"],
+    "tests": ["Noid light test", "Injector resistance", "Wiring continuity ECM→injector"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0300": {
+    "title": "Random/Multiple Cylinder Misfire Detected",
+    "desc": "ECM detects random misfires; rough running, MIL flashing.",
+    "common_causes": ["Ignition coil(s)", "Spark plugs/leads", "Vacuum leak", "Fuel supply", "Mechanical compression issues"],
+    "tests": ["Mode 6 misfire counters", "Coil swap test", "Smoke test intake", "Compression/leak-down"],
+    "severity": "drive_sparingly"
+  },
+  "P0301": {
+    "title": "Cylinder 1 Misfire",
+    "desc": "Misfire detected on cylinder 1.",
+    "common_causes": ["Coil/plug on cylinder 1", "Injector 1 issue", "Compression problem", "Vac leak near cyl 1"],
+    "tests": ["Swap coil/plug 1↔2 to see if misfire moves", "Check injector pulse", "Compression/leak-down on cyl 1"],
+    "severity": "drive_sparingly"
+  },
+  "P0302": {
+    "title": "Cylinder 2 Misfire",
+    "desc": "Misfire detected on cylinder 2.",
+    "common_causes": ["Coil/plug 2", "Injector 2", "Mechanical issue bank"],
+    "tests": ["Swap components", "Scope primary/secondary ignition", "Compression test"],
+    "severity": "drive_sparingly"
+  },
+  "P0303": {
+    "title": "Cylinder 3 Misfire",
+    "desc": "As above, cylinder 3.",
+    "common_causes": ["Coil/plug 3", "Injector 3", "Vac leak localized"],
+    "tests": ["Swap components", "Injector balance test", "Compression test"],
+    "severity": "drive_sparingly"
+  },
+  "P0304": {
+    "title": "Cylinder 4 Misfire",
+    "desc": "As above, cylinder 4.",
+    "common_causes": ["Coil/plug 4", "Injector 4", "Mechanical"],
+    "tests": ["Swap components", "Compression/leak-down", "Fuel quality check"],
+    "severity": "drive_sparingly"
+  },
+  "P0305": {
+    "title": "Cylinder 5 Misfire",
+    "desc": "As above, cylinder 5.",
+    "common_causes": ["Coil/plug 5", "Injector 5", "Mechanical"],
+    "tests": ["Swap components", "Compression", "Fuel rail pressure"],
+    "severity": "drive_sparingly"
+  },
+  "P0306": {
+    "title": "Cylinder 6 Misfire",
+    "desc": "As above, cylinder 6.",
+    "common_causes": ["Coil/plug 6", "Injector 6", "Mechanical"],
+    "tests": ["Swap components", "Compression", "Smoke test"],
+    "severity": "drive_sparingly"
+  },
+  "P0316": {
+    "title": "Misfire Detected on Startup (First 1000 Revolutions)",
+    "desc": "Cold start misfire; common for coil/plug, intake leak, coolant leak into cylinder.",
+    "common_causes": ["Faulty coil/plug", "Leaking intake gaskets", "Coolant seep (head gasket)"],
+    "tests": ["Monitor misfires on cold start", "Cooling system pressure overnight", "Compression/leak-down (wet)"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0325": {
+    "title": "Knock Sensor Circuit Malfunction (Bank 1)",
+    "desc": "KS signal out of range; may pull timing and reduce power.",
+    "common_causes": ["Failed knock sensor", "Harness fault", "Mechanical noise simulating knock"],
+    "tests": ["Check sensor torque and seating", "Scope signal vs load", "Inspect harness under intake"],
+    "severity": "safe"
+  },
+  "P0335": {
+    "title": "Crankshaft Position Sensor A Circuit Malfunction",
+    "desc": "Loss of crank signal; may cause no-start/stall.",
+    "common_causes": ["Failed CKP sensor", "Sensor gap/debris", "Wiring fault", "ECM issue"],
+    "tests": ["Scope CKP waveform while cranking", "Inspect reluctor ring", "Wiring continuity/voltage"],
+    "severity": "stop_driving"
+  },
+  "P0340": {
+    "title": "Camshaft Position Sensor A Circuit Malfunction",
+    "desc": "CMP signal fault; hard start/long crank.",
+    "common_causes": ["Failed CMP sensor", "Timing chain stretch", "Wiring damage"],
+    "tests": ["Scope CMP vs CKP correlation", "Timing marks inspection", "Sensor power/ground"],
+    "severity": "drive_sparingly"
+  },
+  "P0351": {
+    "title": "Ignition Coil A Primary/Secondary Circuit",
+    "desc": "Coil circuit fault on coil A.",
+    "common_causes": ["Open/short in coil circuit", "Failed coil driver", "Poor coil ground"],
+    "tests": ["Coil current ramp on scope", "Swap coil", "Check driver with test light/noid"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0400": {
+    "title": "EGR Flow Malfunction",
+    "desc": "EGR flow not as expected.",
+    "common_causes": ["Clogged EGR passages", "Stuck EGR valve", "DPFE sensor fault (Ford)", "Vacuum supply issue"],
+    "tests": ["Command EGR; engine should stumble at idle", "Inspect passages for carbon", "Verify vacuum/DPFE"],
+    "severity": "drive_sparingly"
+  },
+  "P0401": {
+    "title": "EGR Flow Insufficient Detected",
+    "desc": "Insufficient EGR flow; may ping or set NOx faults.",
+    "common_causes": ["Carbon blockage", "Failed EGR valve", "EGR control solenoid", "EGR DP/position sensor fault"],
+    "tests": ["Command EGR and watch MAP change", "Manual EGR lifting test (vac type)", "Clean passages"],
+    "severity": "drive_sparingly"
+  },
+  "P0402": {
+    "title": "EGR Flow Excessive",
+    "desc": "Too much EGR; rough idle/stalling.",
+    "common_causes": ["EGR valve stuck open", "Control solenoid stuck", "Wiring short"],
+    "tests": ["Block EGR temporarily to confirm symptom change", "Check EGR position feedback", "Inspect solenoid"],
+    "severity": "drive_sparingly"
+  },
+  "P0403": {
+    "title": "EGR Control Circuit",
+    "desc": "Electrical issue in EGR control.",
+    "common_causes": ["Open circuit/short", "Failed solenoid/valve", "ECM driver fault"],
+    "tests": ["Actuate EGR with scan tool", "Check circuit voltage/ground", "Pin drag test connector"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0410": {
+    "title": "Secondary Air Injection System",
+    "desc": "SAI system not supplying air on cold start.",
+    "common_causes": ["Failed SAI pump", "Stuck SAI valve", "Vacuum control issue", "Hose leak"],
+    "tests": ["Command pump; listen for operation", "Feel hose pressure", "Check valve for stuck/soot"],
+    "severity": "safe"
+  },
+  "P0411": {
+    "title": "Secondary Air Injection System Incorrect Flow",
+    "desc": "Measured flow differs from expected.",
+    "common_causes": ["Pump weak", "Blocked lines", "Valve stuck"],
+    "tests": ["Command tests via scan tool", "Inspect/replace valve", "Check for water ingress in pump"],
+    "severity": "safe"
+  },
+
+  "P0420": {
+    "title": "Catalyst System Efficiency Below Threshold (Bank 1)",
+    "desc": "Cat not storing oxygen; often a worn catalyst or upstream issues.",
+    "common_causes": ["Aged/worn catalyst", "Misfire history", "Rich/lean running", "Exhaust leak"],
+    "tests": ["Front/rear O2 switching comparison", "Check for misfire history (Mode 6)", "Exhaust leak test", "Cat temperature delta under load"],
+    "severity": "drive_sparingly"
+  },
+  "P0430": {
+    "title": "Catalyst System Efficiency Below Threshold (Bank 2)",
+    "desc": "Same as P0420, bank 2.",
+    "common_causes": ["Aged cat bank 2", "Misfire damage", "Fuel control issues"],
+    "tests": ["Compare bank 1 vs bank 2 O2 waveforms", "Check for exhaust leaks", "Fuel trims review"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0440": {
+    "title": "EVAP System – General Fault",
+    "desc": "General evaporative emission control fault.",
+    "common_causes": ["Loose/missing fuel cap", "Purge/vent valve fault", "Hose leaks"],
+    "tests": ["EVAP smoke test", "Cap integrity check", "Command purge/vent valves"],
+    "severity": "safe"
+  },
+  "P0441": {
+    "title": "EVAP Incorrect Purge Flow",
+    "desc": "Purge flow not expected value.",
+    "common_causes": ["Stuck purge valve", "Vacuum leak", "Blocked lines"],
+    "tests": ["Command purge % and monitor fuel trims", "Smoke test EVAP lines", "Check purge valve for stuck open"],
+    "severity": "safe"
+  },
+  "P0442": {
+    "title": "EVAP System Small Leak Detected",
+    "desc": "Small leak (e.g., cap or hose).",
+    "common_causes": ["Loose cap", "Cracked hose", "Leaky purge/vent valve"],
+    "tests": ["EVAP smoke test (0.020\" or 0.040\" equivalent)", "Cap seal inspection"],
+    "severity": "safe"
+  },
+  "P0455": {
+    "title": "EVAP System Large Leak Detected",
+    "desc": "Large leak in EVAP system.",
+    "common_causes": ["Missing cap", "Disconnected hose", "Broken canister"],
+    "tests": ["Smoke test to locate leak", "Visual hose/canister inspection"],
+    "severity": "safe"
+  },
+  "P0456": {
+    "title": "EVAP System Very Small Leak",
+    "desc": "Very small leak; often cap seal or hairline crack.",
+    "common_causes": ["Cap seal", "Micro-cracks in hoses", "Vent valve not sealing"],
+    "tests": ["EVAP smoke test with low flow", "Replace cap as test"],
+    "severity": "safe"
+  },
+
+  "P0500": {
+    "title": "Vehicle Speed Sensor (VSS) – No Signal",
+    "desc": "No/implausible speed signal.",
+    "common_causes": ["Failed VSS", "Wiring fault", "ABS module output issue"],
+    "tests": ["Scope VSS signal", "Compare ABS wheel speed PIDs", "Wiring continuity"],
+    "severity": "drive_sparingly"
+  },
+  "P0507": {
+    "title": "Idle Control System RPM Higher Than Expected",
+    "desc": "Idle speed too high.",
+    "common_causes": ["Vacuum leak", "Sticking throttle body", "IAC valve issue (older)"],
+    "tests": ["Smoke test", "Clean throttle body & relearn", "Check IAC counts (if present)"],
+    "severity": "safe"
+  },
+
+  "P0562": {
+    "title": "System Voltage Low",
+    "desc": "Charging voltage low; may trigger multiple faults.",
+    "common_causes": ["Weak alternator", "Battery failing", "Poor grounds"],
+    "tests": ["Charging test at idle/load", "Battery conductance test", "Voltage drop ground/positive"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0606": {
+    "title": "ECM/PCM Processor Fault",
+    "desc": "Internal control module integrity issue.",
+    "common_causes": ["ECM internal failure", "Poor power/ground to ECM", "Aftermarket tunes/hardware faults"],
+    "tests": ["Verify powers/grounds to ECM", "Check for water ingress", "Reflash/replace ECM as last resort"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0700": {
+    "title": "Transmission Control System (MIL Request)",
+    "desc": "Generic MIL from TCM; read TCM codes for specifics.",
+    "common_causes": ["Internal TCM faults present", "Transmission sensor/solenoid issues", "Wiring faults"],
+    "tests": ["Scan the TCM directly", "Check fluid condition/level", "Road test with live data"],
+    "severity": "drive_sparingly"
+  },
+  "P0715": {
+    "title": "Input/Turbine Speed Sensor Circuit Malfunction",
+    "desc": "No/implausible input speed signal.",
+    "common_causes": ["Failed sensor", "Wiring fault", "Tone wheel issue"],
+    "tests": ["Scope sensor waveform", "Inspect connector for ATF intrusion", "Compare input/output speeds"],
+    "severity": "drive_sparingly"
+  },
+  "P0720": {
+    "title": "Output Speed Sensor Circuit Malfunction",
+    "desc": "Output speed signal fault; erratic shift/limp.",
+    "common_causes": ["Failed sensor", "Wiring", "Debris on magnetic tip"],
+    "tests": ["Scope waveform", "Inspect sensor & tone wheel", "Continuity tests"],
+    "severity": "drive_sparingly"
+  },
+  "P0740": {
+    "title": "Torque Converter Clutch Circuit Malfunction",
+    "desc": "TCC not engaging/disengaging correctly.",
+    "common_causes": ["TCC solenoid", "Valve body issue", "Wiring fault"],
+    "tests": ["Command TCC; observe slip RPM", "Check solenoid resistance", "Fluid/valve body inspection"],
+    "severity": "drive_sparingly"
+  },
+  "P0750": {
+    "title": "Shift Solenoid A Malfunction",
+    "desc": "Electrical or hydraulic issue with solenoid A.",
+    "common_causes": ["Failed solenoid A", "Wiring fault", "Hydraulic blockage"],
+    "tests": ["Actuate solenoids via scan tool", "Check resistance", "Hydraulic pressure tests where possible"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0106": {
+    "title": "MAP/Baro Range/Performance Problem",
+    "desc": "MAP reading implausible vs RPM/MAF.",
+    "common_causes": ["MAP sensor fault", "Vacuum hose off/blockage", "ECM reference issues"],
+    "tests": ["Compare MAP to BARO KOEO", "WOT MAP close to BARO?", "Check hose for cracks/blockage"],
+    "severity": "drive_sparingly"
+  },
+  "P0121": {
+    "title": "Throttle/Pedal Position Sensor A Range/Performance",
+    "desc": "TPS/APP not matching expected values.",
+    "common_causes": ["Dirty throttle body", "Wear in TPS", "Wiring/connector faults"],
+    "tests": ["Graph TPS A/B correlation", "Throttle relearn", "Inspect connector pin-fit"],
+    "severity": "drive_sparingly"
+  },
+  "P0221": {
+    "title": "Throttle/Pedal Position Sensor B Range/Performance",
+    "desc": "Redundant channel mismatch.",
+    "common_causes": ["APP/TPS correlation error", "Wiring fault", "Throttle body issue"],
+    "tests": ["Correlation test APP A/B & TPS A/B", "Clean throttle & relearn", "Check 5V ref stability"],
+    "severity": "drive_sparingly"
+  },
+  "P2101": {
+    "title": "Throttle Actuator Control Motor Circuit Range/Performance",
+    "desc": "TAC not responding or out of range.",
+    "common_causes": ["Sticking throttle plate", "TAC motor failure", "Wiring or ECM driver"],
+    "tests": ["Command sweep test", "Clean throttle", "Check motor current draw"],
+    "severity": "drive_sparingly"
+  },
+  "P2110": {
+    "title": "Throttle Actuator Control System – Forced Limited RPM",
+    "desc": "ECM enters limp to protect engine/trans.",
+    "common_causes": ["Serious intake/boost/airflow faults", "Sensor disagreement", "ETC safety strategy"],
+    "tests": ["Resolve underlying codes first", "Correlation tests", "Clear and relearn"],
+    "severity": "drive_sparingly"
+  },
+  "P2135": {
+    "title": "Throttle/Pedal Position Sensor/Switch A/B Voltage Correlation",
+    "desc": "APP/TPS channels mismatch beyond tolerance.",
+    "common_causes": ["Dirty throttle", "Wiring issue", "Failed TPS assembly"],
+    "tests": ["Graph A/B channels vs time", "Throttle body clean/relearn", "Pin-fit test"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0234": {
+    "title": "Engine Overboost Condition",
+    "desc": "Boost exceeds safe limit.",
+    "common_causes": ["Stuck wastegate", "VNT vanes sticking (diesel)", "Boost control solenoid fault"],
+    "tests": ["Boost command vs actual PID", "Wastegate/VNT actuation test", "Vacuum/pressure line checks"],
+    "severity": "stop_driving"
+  },
+  "P0299": {
+    "title": "Turbo/Supercharger Underboost",
+    "desc": "Actual boost lower than commanded.",
+    "common_causes": ["Boost leaks (hoses/intercooler)", "Sticking VNT/wastegate", "Weak turbo", "Exhaust leaks pre-turbo"],
+    "tests": ["Pressure/boost leak test", "Actuate VNT/wastegate", "Check MAF/MAP plausibility"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0339": {
+    "title": "Crankshaft Position Sensor A Circuit Intermittent",
+    "desc": "Intermittent CKP signal loss.",
+    "common_causes": ["Heat-soaked sensor", "Connector looseness", "Reluctor damage"],
+    "tests": ["Heat gun on sensor; watch dropout", "Scope signal during wiggle-test", "Inspect metal debris"],
+    "severity": "stop_driving"
+  },
+
+  "P0130": {
+    "title": "O2 Sensor Circuit (Bank 1 Sensor 1)",
+    "desc": "Upstream O2 sensor circuit fault.",
+    "common_causes": ["Sensor failure", "Heater circuit issue", "Wiring/connector faults"],
+    "tests": ["Check O2 switching 0.1–0.9V petrol", "Heater resistance/command", "Exhaust leak pre-sensor"],
+    "severity": "drive_sparingly"
+  },
+  "P0135": {
+    "title": "O2 Sensor Heater Circuit Malfunction (Bank 1 Sensor 1)",
+    "desc": "Heater open/short; slow sensor warm-up.",
+    "common_causes": ["Heater element failure", "Blown fuse/relay", "Wiring damage"],
+    "tests": ["Heater resistance", "Check fused supply and ground", "Command heater on (if supported)"],
+    "severity": "safe"
+  },
+  "P0141": {
+    "title": "O2 Sensor Heater Circuit Malfunction (Bank 1 Sensor 2)",
+    "desc": "Downstream O2 heater fault.",
+    "common_causes": ["Failed heater", "Wiring/fuse", "Connector corrosion"],
+    "tests": ["Heater resistance", "Check power/ground", "Inspect harness near exhaust"],
+    "severity": "safe"
+  },
+  "P0155": {
+    "title": "O2 Sensor Heater Circuit Malfunction (Bank 2 Sensor 1)",
+    "desc": "Bank 2 upstream heater fault.",
+    "common_causes": ["Heater failure", "Wiring", "Relay/fuse"],
+    "tests": ["Measure heater current", "Check power/ground integrity", "Compare warm-up times B1 vs B2"],
+    "severity": "safe"
+  },
+  "P0161": {
+    "title": "O2 Sensor Heater Circuit Malfunction (Bank 2 Sensor 2)",
+    "desc": "Bank 2 downstream heater fault.",
+    "common_causes": ["Heater element", "Wiring chafed", "Fuse"],
+    "tests": ["Resistance & current check", "Inspect harness routing", "Replace sensor if open"],
+    "severity": "safe"
+  },
+
+  "P0191": {
+    "title": "Fuel Rail Pressure Sensor Range/Performance",
+    "desc": "FRP signal implausible; driveability issues.",
+    "common_causes": ["Faulty rail pressure sensor", "Wiring/5V ref issues", "Fuel pressure instability"],
+    "tests": ["Scope FRP signal vs command", "5V ref & ground voltage drop", "Wiggle-test harness"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0330": {
+    "title": "Knock Sensor 2 Circuit Malfunction (Bank 2)",
+    "desc": "KS2 fault; reduced timing advance.",
+    "common_causes": ["Sensor/wiring", "Mechanical noise", "ECM ref fault"],
+    "tests": ["Torque KS correctly", "Scope signal with load", "Check harness under intake"],
+    "severity": "safe"
+  },
+
+  "P0341": {
+    "title": "Camshaft Position Sensor Range/Performance",
+    "desc": "CMP not in expected range; timing correlation issue.",
+    "common_causes": ["Timing chain stretch", "CMP sensor fault", "Tooth damage"],
+    "tests": ["CMP/CKP correlation", "Mechanical timing check", "Sensor power/ground"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0421": {
+    "title": "Warm Up Catalyst Efficiency Below Threshold (Bank 1)",
+    "desc": "Warm-up converter not performing.",
+    "common_causes": ["Aged cat", "Misfires", "Fuel control issues"],
+    "tests": ["Temp rise across cat after start", "Front/rear O2 behavior", "Misfire counters"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0501": {
+    "title": "VSS Range/Performance",
+    "desc": "Implausible VSS reading vs wheel speed/GPS.",
+    "common_causes": ["VSS sensor fault", "Tone wheel damage", "Wiring/ABS data fault"],
+    "tests": ["Compare ABS wheel speeds & VSS", "Inspect tone ring", "Scope signal"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0520": {
+    "title": "Engine Oil Pressure Sensor/Switch Circuit",
+    "desc": "Oil pressure signal fault. Beware real low oil pressure.",
+    "common_causes": ["Faulty sender", "Wiring", "Actual low oil pressure"],
+    "tests": ["Mechanical pressure gauge test", "Inspect wiring", "Check oil level/grade"],
+    "severity": "stop_driving"
+  },
+
+  "P0560": {
+    "title": "System Voltage Malfunction",
+    "desc": "System voltage out of range (high/low).",
+    "common_causes": ["Alternator regulation fault", "Battery/internal open", "Poor grounds"],
+    "tests": ["Charging system test", "Load test battery", "Voltage drop tests"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0571": {
+    "title": "Brake Switch A Circuit",
+    "desc": "Brake switch signal fault; cruise/shift interlock issues.",
+    "common_causes": ["Faulty switch", "Misadjusted pedal switch", "Wiring fault"],
+    "tests": ["Live data brake switch state", "Adjust/replace switch", "Continuity test"],
+    "severity": "safe"
+  },
+
+  "P0628": {
+    "title": "Fuel Pump Control Circuit Low",
+    "desc": "Low control voltage to fuel pump module/relay.",
+    "common_causes": ["Short-to-ground", "Weak relay/module", "Wiring fault"],
+    "tests": ["Backprobe control line", "Bypass test relay", "Check module ground"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0650": {
+    "title": "MIL Control Circuit",
+    "desc": "Malfunction indicator lamp control issue.",
+    "common_causes": ["Bulb/LED fault", "Cluster wiring", "ECM driver issue"],
+    "tests": ["Cluster output test", "Continuity ECM→cluster", "Check for BCM involvement"],
+    "severity": "safe"
+  },
+
+  "P0705": {
+    "title": "Transmission Range Sensor Circuit",
+    "desc": "PRNDL input not plausible.",
+    "common_causes": ["Range/neutral safety switch fault", "Misadjusted linkage", "Wiring"],
+    "tests": ["Check PRNDL PID vs lever", "Adjust/replace range switch", "Continuity test"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0725": {
+    "title": "Engine Speed Input Circuit",
+    "desc": "Engine speed signal to TCM missing/implausible.",
+    "common_causes": ["No CKP relay to TCM", "Wiring CAN issue", "TCM internal fault"],
+    "tests": ["Scan TCM live RPM", "Network integrity tests", "Check shared sensor feeds"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0730": {
+    "title": "Incorrect Gear Ratio",
+    "desc": "Detected slip or incorrect ratio; internal trans issue likely.",
+    "common_causes": ["Low fluid/pressure", "Worn clutches/bands", "Valve body fault"],
+    "tests": ["Line pressure test", "Fluid condition check", "Adaptation reset/relearn where applicable"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0741": {
+    "title": "Torque Converter Clutch Performance/Stuck Off",
+    "desc": "TCC not locking as commanded.",
+    "common_causes": ["TCC solenoid", "Valve body", "Contaminated fluid"],
+    "tests": ["Command lockup; monitor slip", "Check temps and pressure", "Fluid exchange if contaminated"],
+    "severity": "drive_sparingly"
+  },
+
+  "P2A00": {
+    "title": "O2 Sensor Circuit Range/Performance Bank 1 Sensor 1 (A/F Sensor)",
+    "desc": "Wideband A/F sensor not responding as expected.",
+    "common_causes": ["A/F sensor aging", "Exhaust leak", "Fuel control fault"],
+    "tests": ["AFR current/voltage response test", "Exhaust leak check", "Fuel trims review"],
+    "severity": "drive_sparingly"
+  },
+
+  "P2002": {
+    "title": "Diesel Particulate Filter (DPF) Efficiency Below Threshold",
+    "desc": "DPF not reducing soot as expected; may be overloaded or damaged.",
+    "common_causes": ["Soot overload from short trips", "Failed regen", "Faulty differential pressure sensor", "Exhaust leaks"],
+    "tests": ["DPF differential pressure at idle/load", "Forced regen with scan tool", "Check EGT sensors", "Inspect for leaks pre/post DPF"],
+    "severity": "drive_sparingly"
+  },
+  "P242F": {
+    "title": "DPF Restriction – Ash Accumulation",
+    "desc": "High ash content restricting DPF.",
+    "common_causes": ["End-of-life DPF", "Oil consumption/ash", "Incorrect oil spec"],
+    "tests": ["DPF differential pressure baseline", "Service regen (limited effect on ash)", "Consider DPF cleaning/replacement"],
+    "severity": "drive_sparingly"
+  },
+  "P2463": {
+    "title": "DPF Soot Accumulation",
+    "desc": "Soot load too high; regeneration required.",
+    "common_causes": ["Failed regens due to short trips", "EGR/MAF faults preventing regen", "Sensor failures"],
+    "tests": ["Check soot load %", "Resolve EGR/MAF related codes first", "Perform forced regen safely"],
+    "severity": "drive_sparingly"
+  },
+  "P2458": {
+    "title": "DPF Regeneration Duration",
+    "desc": "Regen taking longer than expected.",
+    "common_causes": ["Restricted DPF", "Low exhaust temps", "Sensor inaccuracies"],
+    "tests": ["Check EGTs during regen", "Verify differential pressure", "Assess for exhaust leaks"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0405": {
+    "title": "EGR Sensor A Circuit Low",
+    "desc": "EGR position feedback low.",
+    "common_causes": ["Open circuit", "Sensor fault", "Stuck valve"],
+    "tests": ["Position sensor voltage sweep", "Command EGR on/off", "Inspect wiring"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0115": {
+    "title": "Engine Coolant Temp Circuit Malfunction",
+    "desc": "ECT signal fault; may cause rich/lean mix.",
+    "common_causes": ["Faulty ECT sensor", "Wiring", "Low coolant/air pocket"],
+    "tests": ["Compare ECT to IAT cold start", "Bleed cooling system", "Sensor resistance check"],
+    "severity": "drive_sparingly"
+  },
+
+  "P018C": {
+    "title": "Fuel Pressure Sensor B Circuit Low",
+    "desc": "Low voltage on secondary fuel pressure sensor.",
+    "common_causes": ["Short to ground", "Sensor fault", "Wiring"],
+    "tests": ["5V ref/ground check", "Backprobe signal", "Continuity test"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0193": {
+    "title": "Fuel Rail Pressure Sensor Circuit High Input",
+    "desc": "FRP signal high; may be sensor/wiring bias.",
+    "common_causes": ["Short-to-battery", "Sensor fault", "Connector moisture"],
+    "tests": ["Voltage at signal pin KOEO", "Wiggle-test", "Compare to mechanical gauge (if petrol)"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0223": {
+    "title": "Throttle/Pedal Position Sensor/Switch B Circuit High",
+    "desc": "High voltage on redundant TPS/APP channel.",
+    "common_causes": ["Short-to-battery", "Sensor fault", "Connector corrosion"],
+    "tests": ["Graph A/B channels", "Check 5V reference network", "Pin-fit test"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0307": {
+    "title": "Cylinder 7 Misfire",
+    "desc": "Misfire on cylinder 7.",
+    "common_causes": ["Coil/plug 7", "Injector 7", "Mechanical issue"],
+    "tests": ["Swap tests", "Compression/leak-down", "Fuel quality"],
+    "severity": "drive_sparingly"
+  },
+  "P0308": {
+    "title": "Cylinder 8 Misfire",
+    "desc": "Misfire on cylinder 8.",
+    "common_causes": ["Coil/plug 8", "Injector 8", "Mechanical issue"],
+    "tests": ["Swap tests", "Compression/leak-down", "Fuel trims"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0320": {
+    "title": "Ignition/Distributor Engine Speed Input Circuit",
+    "desc": "Engine speed input to ECM fault.",
+    "common_causes": ["Distributor/ignition pickup fault", "Wiring", "ECM"],
+    "tests": ["Scope signal", "Inspect pickup gap", "Continuity tests"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0332": {
+    "title": "Knock Sensor 2 Circuit Low Input (Bank 2)",
+    "desc": "Low signal from knock sensor 2.",
+    "common_causes": ["Open circuit", "Sensor under-torqued", "Harness damage"],
+    "tests": ["Torque sensor to spec", "Check harness", "Scope test"],
+    "severity": "safe"
+  },
+
+  "P0345": {
+    "title": "Camshaft Position Sensor A Circuit (Bank 2)",
+    "desc": "Bank 2 cam signal fault.",
+    "common_causes": ["Sensor fault", "Timing issue bank 2", "Wiring"],
+    "tests": ["CMP/CKP correlation bank 2", "Mechanical timing check", "Sensor power/ground"],
+    "severity": "drive_sparingly"
+  },
+
+  "P2106": {
+    "title": "TAC System – Forced Limited Power",
+    "desc": "ETC limp mode due to underlying fault(s).",
+    "common_causes": ["Throttle body issue", "Sensor correlation faults", "Boost/airflow problems"],
+    "tests": ["Resolve root codes first", "Throttle relearn", "Check wiring & grounds"],
+    "severity": "drive_sparingly"
+  },
+
+  "P2111": {
+    "title": "Throttle Actuator Control System – Stuck Open",
+    "desc": "Throttle plate stuck open; safety risk.",
+    "common_causes": ["Carbon buildup", "Motor failure", "Mechanical jam"],
+    "tests": ["Inspect/clean throttle", "Command sweep test", "Check return spring"],
+    "severity": "stop_driving"
+  },
+
+  "P2195": {
+    "title": "O2 Sensor Signal Biased/Stuck Lean (Bank 1 Sensor 1)",
+    "desc": "Upstream O2 stuck lean.",
+    "common_causes": ["Exhaust leak", "MAF underreporting", "Vacuum leak"],
+    "tests": ["Exhaust leak test", "MAF sanity check", "Smoke test intake"],
+    "severity": "drive_sparingly"
+  },
+  "P2197": {
+    "title": "O2 Sensor Signal Biased/Stuck Lean (Bank 2 Sensor 1)",
+    "desc": "Upstream Bank 2 stuck lean.",
+    "common_causes": ["Exhaust leak bank 2", "Vac leak bank 2", "Sensor fault"],
+    "tests": ["Leak check", "Smoke near bank 2", "Swap sensors L/R (if identical)"],
+    "severity": "drive_sparingly"
+  },
+
+  "P2187": {
+    "title": "System Too Lean at Idle (Bank 1)",
+    "desc": "Lean only at idle suggests vacuum leak.",
+    "common_causes": ["PCV leak", "Intake gasket leak", "Brake booster leak"],
+    "tests": ["Smoke test manifold & PCV hoses", "STFT/LTFT idle vs 2500rpm", "Brake booster isolation"],
+    "severity": "drive_sparingly"
+  },
+  "P2189": {
+    "title": "System Too Lean at Idle (Bank 2)",
+    "desc": "Lean idle, bank 2.",
+    "common_causes": ["Intake gasket bank 2", "PCV/vac leaks", "Exhaust leak"],
+    "tests": ["Smoke test focus bank 2", "Fuel trims comparison", "O2 cross-check"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0335xx": {
+    "title": "Crankshaft Position Sensor Family Guidance",
+    "desc": "Any CKP family code: loss/bad CKP signal. No-start/stall possible.",
+    "common_causes": ["Failed sensor", "Air gap/debris", "Damaged tone ring", "Wiring fault"],
+    "tests": ["Scope CKP waveform while cranking", "Inspect connector/oil contamination", "Check for metal debris at sensor"],
+    "severity": "stop_driving"
+  },
+  "P03xx": {
+    "title": "Misfire Family Guidance",
+    "desc": "P0300–P0308 misfire family: ignition, fuel, air, or mechanical.",
+    "common_causes": ["Ignition coils/plugs", "Vacuum leaks", "Fuel pressure/injectors", "Compression faults"],
+    "tests": ["Mode 6 misfire counters", "Swap coil/plug on suspect cylinder", "Compression/leak-down", "Smoke test"],
+    "severity": "drive_sparingly"
+  },
+  "P01xx": {
+    "title": "Air/Fuel/Intake Sensor Family",
+    "desc": "General intake/air metering codes (MAF/MAP/IAT/ECT/TPS).",
+    "common_causes": ["Sensor drift/failure", "Wiring/ref 5V faults", "Intake leaks"],
+    "tests": ["Compare PIDs vs expected", "Check 5V/GND integrity", "Smoke test intake"],
+    "severity": "drive_sparingly"
+  },
+  "P04xx": {
+    "title": "EGR/EVAP Family",
+    "desc": "General EGR/EVAP faults.",
+    "common_causes": ["Carbon blockage", "Valve faults", "Leaks/hoses"],
+    "tests": ["Command tests via scan tool", "Smoke test", "Clean/replace components as needed"],
+    "severity": "safe"
+  },
+  "P20xx": {
+    "title": "Aftertreatment/DPF Family (Diesel)",
+    "desc": "General DPF/aftertreatment faults: DPF soot/ash, sensors, regen.",
+    "common_causes": ["Failed regens", "Sensor faults (EGT, DP)", "Exhaust leaks", "Low drive cycles"],
+    "tests": ["Soot load/diff pressure/EGTs", "Forced regen after fixing root causes", "Leak check"],
+    "severity": "drive_sparingly"
+  },
+
+  "U0100": {
+    "title": "Lost Communication With ECM/PCM 'A'",
+    "desc": "Network CAN comms lost with ECM.",
+    "common_causes": ["CAN wiring fault", "Module power/ground loss", "ECM failure"],
+    "tests": ["Check ECM powers/grounds first", "Network resistance 60Ω check", "Scope CAN H/L for activity"],
+    "severity": "drive_sparingly"
+  },
+  "U0121": {
+    "title": "Lost Communication With ABS/Brake Control Module",
+    "desc": "No comms with ABS/ESP module.",
+    "common_causes": ["Module power/ground", "CAN wiring", "Module fault"],
+    "tests": ["Verify powers/grounds", "Network diagnostics", "Check for water ingress at module"],
+    "severity": "drive_sparingly"
+  },
+
+  "C0035": {
+    "title": "Left Front Wheel Speed Sensor Circuit",
+    "desc": "ABS wheel speed signal LF missing/implausible.",
+    "common_causes": ["Failed sensor", "Damaged tone ring", "Wiring/connector"],
+    "tests": ["Compare wheel speed PIDs", "Inspect gap and ring", "Continuity tests"],
+    "severity": "safe"
+  },
+  "C0040": {
+    "title": "Right Front Wheel Speed Sensor Circuit",
+    "desc": "RF wheel speed signal fault.",
+    "common_causes": ["Sensor", "Tone ring", "Wiring"],
+    "tests": ["Live data compare LF/RF", "Inspect sensor tip", "Continuity"],
+    "severity": "safe"
+  },
+
+  "B0020": {
+    "title": "Driver Frontal Deployment Loop Stage 2 Resistance High",
+    "desc": "SRS airbag circuit high resistance; safety system fault.",
+    "common_causes": ["Clock spring/spiral cable", "Connector under seat", "Airbag module wiring"],
+    "tests": ["SRS scan & guided tests", "Connector tension check", "Clock spring inspection"],
+    "severity": "drive_sparingly"
+  },
+
+  "P2107": {
+    "title": "TAC Module Processor",
+    "desc": "Throttle actuator control module internal fault.",
+    "common_causes": ["Internal throttle body failure", "ECM/TAC power/ground issue", "Connector corrosion"],
+    "tests": ["Powers/grounds verification", "Substitute throttle body if feasible", "Correlation code resolution"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0336": {
+    "title": "Crankshaft Position Sensor A Range/Performance",
+    "desc": "Out-of-range CKP signal; may be reluctor damage.",
+    "common_causes": ["Reluctor tooth damage", "Incorrect air gap", "Sensor fault"],
+    "tests": ["Scope CKP wave for missing tooth pattern", "Check mount and debris", "Replace sensor if intermittent"],
+    "severity": "stop_driving"
+  },
+
+  "P0406": {
+    "title": "EGR Sensor A Circuit High",
+    "desc": "High feedback voltage from EGR position sensor.",
+    "common_causes": ["Short-to-battery", "Stuck EGR valve", "Sensor fault"],
+    "tests": ["Command EGR close; verify position drops", "Wiring inspection", "Sensor voltage sweep"],
+    "severity": "drive_sparingly"
+  },
+
+  "P0457": {
+    "title": "EVAP System Leak Detected (Fuel Cap Loose/Off)",
+    "desc": "Cap off/loose indicated.",
+    "common_causes": ["Loose/missing cap", "Cap seal damaged"],
+    "tests": ["Tighten/replace cap", "Clear & recheck after drive cycles"],
+    "severity": "safe"
+  }
+}

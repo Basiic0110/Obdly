@@ -1,0 +1,37 @@
+{
+  "P0400": {
+    "title": "EGR Flow Malfunction",
+    "desc": "Typical on Z16/Z19 engines; carbon or solenoid failure.",
+    "common_causes": ["Carbon buildup", "EGR valve stuck", "Wiring corrosion"],
+    "tests": ["Command EGR via scan tool", "Inspect passages", "Replace/clean valve"],
+    "severity": "drive_sparingly"
+  },
+  "P0101": {
+    "title": "MAF Circuit Range/Performance",
+    "desc": "MAF contamination or sensor drift common on Vauxhall diesels.",
+    "common_causes": ["Oiled filters", "Wiring fault", "Vacuum leak"],
+    "tests": ["Live data sanity check", "Clean MAF", "Smoke test intake"],
+    "severity": "drive_sparingly"
+  },
+  "P1101": {
+    "title": "Intake Air Flow System Performance",
+    "desc": "MAF within self-test range not met.",
+    "common_causes": ["Dirty MAF", "Vacuum/boost leaks", "PCV stuck open"],
+    "tests": ["Clean MAF", "Smoke test", "Inspect PCV"],
+    "severity": "drive_sparingly"
+  },
+  "P2452": {
+    "title": "DPF Differential Pressure Sensor A Circuit",
+    "desc": "Sensor or hose faults, often near bulkhead.",
+    "common_causes": ["Blocked hose", "Sensor drift", "Condensation damage"],
+    "tests": ["Inspect/clean hoses", "Check KOEO voltage", "Replace sensor"],
+    "severity": "drive_sparingly"
+  },
+  "P242F": {
+    "title": "DPF Restriction – Ash Accumulation",
+    "desc": "High ash load—requires cleaning or replacement.",
+    "common_causes": ["End-of-life DPF", "Incorrect oil spec", "Too frequent short trips"],
+    "tests": ["DPF differential pressure check", "Ash load estimate", "DPF clean/replace"],
+    "severity": "drive_sparingly"
+  }
+}

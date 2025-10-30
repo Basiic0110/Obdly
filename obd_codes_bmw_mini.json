@@ -1,0 +1,51 @@
+{
+  "P0012": {
+    "title": "A Camshaft Position – Timing Over-Retarded (Bank 1)",
+    "desc": "VANOS over-retarded; often oil quality/solenoids/screens.",
+    "common_causes": ["Sticky VANOS solenoid(s)", "Blocked oil control screens", "Low/incorrect oil grade", "Timing chain stretch (N47/N20/N47)"],
+    "tests": ["Swap/clean VANOS solenoids (intake/exhaust)", "Oil service with correct LL-01/04", "Cam/crank correlation graph"],
+    "severity": "drive_sparingly"
+  },
+  "P0015": {
+    "title": "B Camshaft Position – Timing Over-Retarded (Bank 1)",
+    "desc": "Exhaust VANOS side with similar root causes.",
+    "common_causes": ["VANOS solenoid", "Sludge in galleries", "Chain stretch/guides"],
+    "tests": ["Solenoid activation test", "Scope CMP vs CKP", "Oil pressure check if needed"],
+    "severity": "drive_sparingly"
+  },
+  "P0171": {
+    "title": "System Too Lean (Bank 1) – BMW nuance",
+    "desc": "Crankcase vent (PCV/CCV) failures and intake boots are common.",
+    "common_causes": ["Split CCV/PCV hoses", "DISA flap/shaft leak (M54/N52)", "Intake boot tears (between MAF & TB)"],
+    "tests": ["Smoke test focusing on CCV lines", "DISA inspection", "Fuel trims idle vs 2500 rpm"],
+    "severity": "drive_sparingly"
+  },
+  "P0300": {
+    "title": "Random Misfire – BMW",
+    "desc": "Coils and plugs common; oil in plug wells on some engines.",
+    "common_causes": ["Delphi/Bosch coils aging", "Valve cover gasket leak to wells", "Injector issues (N43/N53 DI)"],
+    "tests": ["Swap coils and monitor", "Inspect wells for oil", "Injector balance test (DI)"],
+    "severity": "drive_sparingly"
+  },
+  "P0420": {
+    "title": "Catalyst Efficiency Low (Bank 1) – BMW",
+    "desc": "Often caused by upstream issues or ageing close-coupled cat.",
+    "common_causes": ["Misfire history", "Oil consumption poisoning cat", "A/F sensor aging"],
+    "tests": ["Front/rear AFR behaviour", "Misfire counters Mode 6", "Backpressure/temperature delta"],
+    "severity": "drive_sparingly"
+  },
+  "P0520": {
+    "title": "Oil Pressure Sensor Circuit – BMW",
+    "desc": "N-series: sensor failures not rare; verify real pressure.",
+    "common_causes": ["Failed sender", "Low oil pressure (chain/guides wear)", "Wiring at filter housing"],
+    "tests": ["Mechanical gauge test", "Inspect OFH leaks", "Check for timing noise"],
+    "severity": "stop_driving"
+  },
+  "P0172": {
+    "title": "System Too Rich (Bank 1) – BMW",
+    "desc": "Leaking injectors (DI) or EVAP purge stuck.",
+    "common_causes": ["Piezo/solenoid injector leak (DI)", "Stuck purge valve", "Fuel pressure regulator issue"],
+    "tests": ["Injector leak-down", "Purge command/monitor trims", "Rail pressure decay test"],
+    "severity": "drive_sparingly"
+  }
+}

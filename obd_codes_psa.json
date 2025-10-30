@@ -1,0 +1,37 @@
+{
+  "P1435": {
+    "title": "Additive System – Malfunction (Eolys)",
+    "desc": "Fuel-borne catalyst dosing system fault.",
+    "common_causes": ["Low/empty Eolys fluid", "Additive pump fault", "Dosing ECU communication"],
+    "tests": ["Read additive counter", "Prime/bleed additive system", "Refill and reset counter with scan tool"],
+    "severity": "drive_sparingly"
+  },
+  "P1445": {
+    "title": "Particulate Filter – Additive Quantity Too High/Regeneration Needed",
+    "desc": "Additive calc exceeds threshold due to frequent regens/short trips.",
+    "common_causes": ["High soot load", "Incorrect resets", "Leaking injectors increasing soot"],
+    "tests": ["Check soot/ash load PIDs", "Service regen after fixes", "Verify correct additive type (Eolys DPX/INF/HY)"],
+    "severity": "drive_sparingly"
+  },
+  "P20E8": {
+    "title": "Reductant Pressure Too Low (SCR/AdBlue)",
+    "desc": "Urea pump not building pressure.",
+    "common_causes": ["Failed pump", "Crystallised lines", "Tank heater fault (cold climates)"],
+    "tests": ["Pressure build test", "Decrystallise/flush lines", "Check heater/level sensor"],
+    "severity": "drive_sparingly"
+  },
+  "P2002": {
+    "title": "DPF Efficiency Below Threshold (PSA)",
+    "desc": "DPF not performing; often sensor/regen issues.",
+    "common_causes": ["Differential pressure sensor drift", "EGT sensor faults", "Exhaust leaks"],
+    "tests": ["Diff pressure plausibility", "EGT cross-check", "Guided regen post-repair"],
+    "severity": "drive_sparingly"
+  },
+  "P0490": {
+    "title": "EGR Control Circuit High",
+    "desc": "Stuck or electrically biased EGR control.",
+    "common_causes": ["Stuck EGR valve", "Wiring short-to-batt", "ECU driver fault"],
+    "tests": ["Command test; watch MAF drop", "Harness inspection", "Valve cleaning/replacement"],
+    "severity": "drive_sparingly"
+  }
+}

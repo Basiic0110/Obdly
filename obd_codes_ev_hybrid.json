@@ -1,0 +1,252 @@
+{
+  "P0A0F": {
+    "title": "Engine Failed to Start (Hybrid/EV)",
+    "desc": "Hybrid system attempted to start ICE but failed; vehicle may stay in EV-only or no-start mode.",
+    "common_causes": [
+      "12 V battery weak or disconnected",
+      "HV battery state-of-charge too low",
+      "Inverter not supplying MG1 torque",
+      "ICE mechanical fault or immobiliser issue"
+    ],
+    "tests": [
+      "Check 12 V battery voltage under load (>11.5 V)",
+      "Read hybrid ECU freeze-frame for MG1/MG2 status",
+      "Ensure HV interlock loop closed",
+      "Attempt hybrid start after clearing codes"
+    ],
+    "severity": "stop_driving"
+  },
+
+  "P0A1F": {
+    "title": "Hybrid Powertrain Control Module (HPCM) Performance",
+    "desc": "Internal error or corrupted data in hybrid control ECU.",
+    "common_causes": [
+      "ECU firmware glitch",
+      "Low system voltage during boot",
+      "CAN communication fault",
+      "Hybrid ECU hardware fault"
+    ],
+    "tests": [
+      "Check 12 V and HV supply voltages",
+      "Verify all other hybrid ECUs online (scan CAN tree)",
+      "Reflash or replace HPCM if persistent"
+    ],
+    "severity": "drive_sparingly"
+  },
+
+  "P0A7F": {
+    "title": "Hybrid Battery Pack Deterioration",
+    "desc": "State-of-health below manufacturer threshold; reduced performance.",
+    "common_causes": [
+      "Aged NiMH/Li-ion cells",
+      "Imbalanced module voltages",
+      "Cooling fan clogged or inoperative",
+      "Frequent deep discharge cycles"
+    ],
+    "tests": [
+      "View individual block voltages and ΔV",
+      "Run hybrid battery capacity test",
+      "Clean battery cooling ducts/fan",
+      "Recondition or replace weak modules"
+    ],
+    "severity": "drive_sparingly"
+  },
+
+  "P0A80": {
+    "title": "Replace Hybrid Battery Pack",
+    "desc": "Battery module imbalance or failure too severe for reconditioning.",
+    "common_causes": [
+      "Multiple weak cells",
+      "Corrosion in sense harness",
+      "High internal resistance",
+      "Thermal imbalance"
+    ],
+    "tests": [
+      "Compare module voltages (ΔV > 0.3 V = fault)",
+      "IR test of suspect blocks",
+      "Inspect service plug/fuse for corrosion"
+    ],
+    "severity": "stop_driving"
+  },
+
+  "P0AA6": {
+    "title": "Hybrid Battery Voltage System Isolation Fault",
+    "desc": "Detected voltage leak between HV system and chassis ground.",
+    "common_causes": [
+      "Moisture in HV battery or inverter housing",
+      "Damaged orange-cable insulation",
+      "Inverter coolant contamination",
+      "HV compressor short"
+    ],
+    "tests": [
+      "Insulation resistance test with megohmmeter",
+      "Check inverter coolant for conductivity",
+      "Dry/replace affected components"
+    ],
+    "severity": "stop_driving"
+  },
+
+  "P0C73": {
+    "title": "Drive Motor 'A' Inverter Temperature Too High",
+    "desc": "Thermal overload detected in MG1/MG2 inverter stage.",
+    "common_causes": [
+      "Inverter coolant pump failure",
+      "Low inverter coolant level",
+      "Blocked inverter radiator",
+      "Aggressive driving under high ambient temp"
+    ],
+    "tests": [
+      "Verify inverter coolant circulation",
+      "Check pump operation (flow sound, scan tool)",
+      "Inspect radiator fins for blockage"
+    ],
+    "severity": "drive_sparingly"
+  },
+
+  "P0D26": {
+    "title": "HV Battery Temperature Sensor Circuit Range/Performance",
+    "desc": "Sensor reading implausible; battery fan may go high-speed.",
+    "common_causes": [
+      "Failed temp sensor",
+      "Corroded sense harness",
+      "Battery ECU connector moisture"
+    ],
+    "tests": [
+      "Read all sensor temperatures; look for outlier",
+      "Check wiring resistance",
+      "Replace affected sensor/module"
+    ],
+    "severity": "drive_sparingly"
+  },
+
+  "P0E15": {
+    "title": "Hybrid/EV Battery Cooling System Performance",
+    "desc": "Cooling flow or fan speed not adequate.",
+    "common_causes": [
+      "Battery fan clogged with dust",
+      "Ductwork obstruction",
+      "Cooling control module fault"
+    ],
+    "tests": [
+      "Command fan test",
+      "Clean fan/filter",
+      "Check power/ground at fan controller"
+    ],
+    "severity": "drive_sparingly"
+  },
+
+  "P0A93": {
+    "title": "Inverter Cooling System Performance",
+    "desc": "Inverter coolant pump under-performing; common Prius/Hybrid issue.",
+    "common_causes": [
+      "Failed inverter pump",
+      "Airlock in cooling system",
+      "Electrical connector loose",
+      "Low coolant"
+    ],
+    "tests": [
+      "Command pump on; feel for vibration",
+      "Bleed cooling circuit",
+      "Check voltage/current at pump",
+      "Replace pump if no flow"
+    ],
+    "severity": "drive_sparingly"
+  },
+
+  "P1A10": {
+    "title": "Motor Generator Performance (General)",
+    "desc": "Motor torque or speed mismatch between command and feedback.",
+    "common_causes": [
+      "Resolver sensor fault",
+      "Stator winding insulation failure",
+      "Inverter transistor fault"
+    ],
+    "tests": [
+      "Monitor motor current and speed sensors",
+      "Insulation test on motor windings",
+      "Replace inverter or motor if internal fault confirmed"
+    ],
+    "severity": "stop_driving"
+  },
+
+  "P1C20": {
+    "title": "Regen Braking System Performance",
+    "desc": "Blended braking not meeting target decel; may revert to friction only.",
+    "common_causes": [
+      "Wheel-speed sensor mismatch",
+      "Brake pressure sensor calibration",
+      "DC/DC converter voltage sag"
+    ],
+    "tests": [
+      "Check ABS wheel speeds under gentle braking",
+      "Monitor regen current vs pedal input",
+      "Inspect brake pressure transducer"
+    ],
+    "severity": "drive_sparingly"
+  },
+
+  "P0C78": {
+    "title": "Drive Motor Inverter Current Sensor Circuit",
+    "desc": "Current sensor output implausible or missing.",
+    "common_causes": [
+      "Open/short in current sensor wiring",
+      "Failed inverter board sensor IC",
+      "Electrical noise from HV cables"
+    ],
+    "tests": [
+      "Inspect inverter connector pins",
+      "Check shield grounding",
+      "Replace inverter if internal sensor faulty"
+    ],
+    "severity": "stop_driving"
+  },
+
+  "P0C87": {
+    "title": "DC/DC Converter Voltage Performance",
+    "desc": "Low 12 V output from converter; may cause random faults.",
+    "common_causes": [
+      "Weak HV supply",
+      "Failed converter module",
+      "Loose 12 V output cable"
+    ],
+    "tests": [
+      "Measure converter output (13.5–14.5 V)",
+      "Check HV input fuse",
+      "Inspect ground connections"
+    ],
+    "severity": "drive_sparingly"
+  },
+
+  "P31E0": {
+    "title": "EV System Unable to Ready",
+    "desc": "EV/Hybrid main relay failed to close or system unsafe to start.",
+    "common_causes": [
+      "Interlock loop open",
+      "HV service plug removed",
+      "Battery contactor fault",
+      "Inverter detected insulation leak"
+    ],
+    "tests": [
+      "Check READY lamp behaviour",
+      "Verify service plug seated",
+      "Check contactor continuity and coil voltage"
+    ],
+    "severity": "stop_driving"
+  },
+
+  "P31E1": {
+    "title": "EV System Service Isolation Fault",
+    "desc": "Detected HV isolation failure post-service plug insertion.",
+    "common_causes": [
+      "Improper service plug installation",
+      "HV terminal contamination",
+      "Residual charge on inverter caps"
+    ],
+    "tests": [
+      "Remove & reinsert plug properly",
+      "Clean terminals with dielectric spray",
+      "Check isolation resistance"
+    ],
+    "severity": "stop_driving"
+  }
+}

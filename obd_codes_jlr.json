@@ -1,0 +1,37 @@
+{
+  "P132B": {
+    "title": "Turbocharger/Supercharger Boost Control 'A' Performance",
+    "desc": "Very common on 2.2/3.0 diesels; electronic actuator or VNT sticking.",
+    "common_causes": ["Sticky VNT mechanism", "Actuator position sensor fault", "Vacuum/pressure control issues (older)"],
+    "tests": ["Actuator sweep test; check for smooth movement", "Boost requested vs actual logs", "Check for rod free-play/binding"],
+    "severity": "drive_sparingly"
+  },
+  "P0405": {
+    "title": "EGR Sensor A Circuit Low (JLR diesel)",
+    "desc": "Low feedback or stuck valve.",
+    "common_causes": ["Stuck EGR valve/cooler restriction", "Wiring low/grounded", "Sensor failure"],
+    "tests": ["Command EGR; observe MAF change", "Electrical sweep test", "Cooler inspection"],
+    "severity": "drive_sparingly"
+  },
+  "P2463": {
+    "title": "DPF Soot Accumulation",
+    "desc": "Soot mass too high; regen inhibited.",
+    "common_causes": ["Short-trip usage", "Failed EGT/diff pressure sensor", "Intake/boost leaks reducing EGTs"],
+    "tests": ["Soot mass PID", "Sensor checks", "Forced regen after fixes"],
+    "severity": "drive_sparingly"
+  },
+  "P0130": {
+    "title": "O2 Sensor Circuit (B1S1) – JLR",
+    "desc": "Upstream O2 faults; wiring near manifolds can cook.",
+    "common_causes": ["Heater/open circuit", "Harness heat damage", "Sensor aging"],
+    "tests": ["Heater resistance/current", "Inspect loom routing/heat shields", "Switching behavior test"],
+    "severity": "drive_sparingly"
+  },
+  "P0171": {
+    "title": "System Too Lean (Jag/LR petrol)",
+    "desc": "Unmetered air or PCV issues; supercharged models sensitive to leaks.",
+    "common_causes": ["PCV diaphragm/breather", "Intercooler couplers", "MAF contamination"],
+    "tests": ["Smoke test inc. SC couplers", "MAF g/s sanity", "Fuel pressure check under load"],
+    "severity": "drive_sparingly"
+  }
+}

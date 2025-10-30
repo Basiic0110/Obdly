@@ -1,0 +1,59 @@
+{
+  "P2015": {
+    "title": "Intake Manifold Runner (Bank 1) Position Sensor/Switch Implausible",
+    "desc": "Common on 2.0 TDI/TSI. Stop-limits inside manifold wear; sensor reports out-of-range.",
+    "common_causes": ["Worn/stretched runner stop", "Linkage play", "Carbon buildup (diesel)", "Failed runner motor/sensor"],
+    "tests": ["Actuate runner with scan tool", "Visual check of arm travel", "End-stop bracket kit fitment (VAG repair)"],
+    "severity": "drive_sparingly",
+    "notes": "Often fixed with a metal stop bracket kit without replacing the whole manifold."
+  },
+  "P0299": {
+    "title": "Underboost (Turbo/Supercharger)",
+    "desc": "Very common on VNT turbos; sticking vanes or vacuum leaks.",
+    "common_causes": ["Sticking VNT vanes (soot)", "Split boost hose/intercooler", "Vacuum line/supply leak", "N75 boost control solenoid"],
+    "tests": ["Vac test actuator; observe smooth rod travel ~18–22 inHg", "Smoke/pressure test charge pipes", "Log boost requested vs actual"],
+    "severity": "drive_sparingly"
+  },
+  "P2563": {
+    "title": "Turbocharger Boost Control Position Sensor 'A' Circuit Range/Performance",
+    "desc": "Position sensor in electronic actuator or VNT feedback faulty/out of range.",
+    "common_causes": ["Seized actuator lever", "Failed position sensor in actuator", "Harness corrosion near turbo heat"],
+    "tests": ["Output test: actuator sweep 0–100%", "Check live position vs command", "Inspect linkage free-play"],
+    "severity": "drive_sparingly"
+  },
+  "P0401": {
+    "title": "EGR Flow Insufficient (VAG diesel)",
+    "desc": "Low EGR rate measured; frequently carbon blockage in cooler or valve.",
+    "common_causes": ["Sooted EGR cooler", "Sticking EGR valve", "MAP/Mass airflow plausibility error"],
+    "tests": ["Command EGR; watch MAF drop ≥ expected", "Cooler cleaning/replace", "EGR adaptation reset"],
+    "severity": "drive_sparingly"
+  },
+  "P2002": {
+    "title": "DPF Efficiency Below Threshold (VAG)",
+    "desc": "DPF not storing/oxidising soot properly.",
+    "common_causes": ["Soot overload from short runs", "Failed regens due to sensors", "Exhaust leaks"],
+    "tests": ["Diff pressure at idle/2500 rpm", "EGT sensor plausibility", "Guided regen after fixing faults"],
+    "severity": "drive_sparingly"
+  },
+  "P0171": {
+    "title": "System Too Lean (TSI/FSI nuance)",
+    "desc": "Unmetered air leaks or PCV diaphragm split are common.",
+    "common_causes": ["PCV (breather) diaphragm tear", "Intake tract leaks", "MAF underreporting", "HPFP cam follower wear (FSI)"],
+    "tests": ["Smoke test intake/PCV", "Check MAF g/s vs expected", "Inspect cam follower (FSI)"],
+    "severity": "drive_sparingly"
+  },
+  "P0087": {
+    "title": "Fuel Rail/System Pressure Too Low (FSI/CR TDI nuance)",
+    "desc": "On FSI: HPFP follower/cam lobe wear; on CR TDI: IMV/lift pump.",
+    "common_causes": ["HPFP follower wear (FSI)", "Lift pump weak (TDI)", "IMV sticking (TDI)", "Fuel filter restriction"],
+    "tests": ["Rail pressure vs commanded logs", "Low-pressure supply test", "Inspect cam follower (FSI)"],
+    "severity": "drive_sparingly"
+  },
+  "P2016": {
+    "title": "Intake Manifold Runner Position Sensor/Switch Circuit Low",
+    "desc": "Companion to P2015 on VAG; electrical low/bias.",
+    "common_causes": ["Runner sensor internal fault", "Wiring resistance ↑", "Connector oil ingress"],
+    "tests": ["Voltage sweep test", "Pin-tension check", "Harness repair near manifold"],
+    "severity": "drive_sparingly"
+  }
+}
