@@ -1365,27 +1365,39 @@ def _norm(s: str) -> str:
     return s.strip()
 
 
-with st.sidebar.expander("Admin", expanded=False):
-    admin_key_input_main = st.text_input("Enter admin key",
-                                         type="password",
-                                         key="admin_key_input_main")
-    if st.button("Login", key="admin_unlock_btn_main"):
-        admin_secret = (os.environ.get("OBDLY_ADMIN_KEY")
-                        or os.environ.get("ADMIN_PASSWORD")
-                        or os.environ.get("ADMIN_KEY"))
-        if not admin_secret:
-            st.error("No admin secret found (OBDLY_ADMIN_KEY).")
-        elif _norm(admin_key_input_main) == _norm(admin_secret):
-            ss.is_admin = True
-            st.success("✅ Admin unlocked")
-        else:
-            st.error("Incorrect password")
+# Only show admin panel if already admin or in development mode
+if ss.get("is_admin", False) or os.environ.get("ADMIN_DEBUG_MODE") == "true":
+    with st.sidebar.expander("Admin", expanded=False):
+        admin_key_input_main = st.text_input("Enter admin key",
+                                             type="password",
+                                             key="admin_key_input_main")
+        if st.button("Login", key="admin_unlock_btn_main"):
+            admin_secret = (os.environ.get("OBDLY_ADMIN_KEY")
+                            or os.environ.get("ADMIN_PASSWORD")
+                            or os.environ.get("ADMIN_KEY"))
+            if not admin_secret:
+                st.error("No admin secret found (OBDLY_ADMIN_KEY).")
+            elif _norm(admin_key_input_main) == _norm(admin_secret):
+                ss.is_admin = True
+                st.success("✅ Admin unlocked")
+            else:
+                st.error("Incorrect password")
 
-page = st.sidebar.radio(
-    "Navigate",
-    ["💬 Chat with OBDly", "🛠️ Share Your Fix", "📊 Chat History", "ℹ️ About"] +
-    (["🔍 Reddit Collector", "🗄️ Database Manager", "📋 Review Submissions"]
-     if ss.is_admin else []))
+# Cleaner navigation without radio buttons
+st.sidebar.markdown("### 📋 Navigate")
+page_options = [
+    "💬 Chat with OBDly", "🛠️ Share Your Fix", "📊 Chat History", "ℹ️ About"
+]
+
+# Add admin pages if user is admin
+if ss.is_admin:
+    page_options += [
+        "🔍 Reddit Collector", "🗄️ Database Manager", "📋 Review Submissions"
+    ]
+
+page = st.sidebar.selectbox("Choose a page",
+                            page_options,
+                            label_visibility="collapsed")
 
 if st.sidebar.button("🔄 New Conversation"):
     ss.chat_messages = []
