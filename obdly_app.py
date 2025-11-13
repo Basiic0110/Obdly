@@ -284,7 +284,12 @@ def _normalise_text(s: str) -> str:
 # ───────────────────────── Conversation Management ─────────────────────────
 def save_conversation():
     """Save current conversation to user-specific storage"""
-    if not ss.chat_messages or not ss.get("user_id"):
+    if not ss.chat_messages:
+        return
+
+    # Only save to database if user is logged in
+    if not ss.get("user_id"):
+        # Anonymous users: chats stay in session only (temporary)
         return
 
     if "current_conversation_id" not in ss or not ss.current_conversation_id:
@@ -1277,88 +1282,91 @@ st.markdown("""
 # ───────────────────────── Sidebar ─────────────────────────
 st.sidebar.title("📑 Menu")
 
-# ────────────── LOGIN/SIGNUP SECTION ──────────────
+# ────────────── OPTIONAL LOGIN SECTION ──────────────
 if not ss.logged_in:
-    st.sidebar.markdown("## 🔐 Login Required")
-    st.sidebar.info("Create a free account to use OBDly")
+    with st.sidebar.expander("💾 Save Your Chats (Optional)", expanded=False):
+        st.caption(
+            "Create a free account to save conversations permanently. Continue without an account for temporary chats."
+        )
 
-    tab1, tab2 = st.sidebar.tabs(["Login", "Sign Up"])
+        tab1, tab2 = st.tabs(["Login", "Sign Up"])
 
-    with tab1:
-        login_username = st.text_input("Username", key="login_username")
-        login_password = st.text_input("Password",
-                                       type="password",
-                                       key="login_password")
+        with tab1:
+            login_username = st.text_input("Username", key="login_username")
+            login_password = st.text_input("Password",
+                                           type="password",
+                                           key="login_password")
 
-        if st.button("Login", use_container_width=True, type="primary"):
-            if login_username and login_password:
-                success, user_id = verify_user(login_username, login_password)
-                if success:
-                    ss.logged_in = True
-                    ss.username = login_username
-                    ss.user_id = user_id
-                    st.success(f"✅ Welcome back, {login_username}!")
-                    time.sleep(0.5)
-                    st.rerun()
-                else:
-                    st.error("❌ Invalid username or password")
-            else:
-                st.warning("Please enter both username and password")
-
-    with tab2:
-        st.caption("🔒 Privacy: We don't collect emails or personal info.")
-
-        signup_username = st.text_input("Choose Username",
-                                        key="signup_username")
-        signup_password = st.text_input("Choose Password (min 6 chars)",
-                                        type="password",
-                                        key="signup_password")
-        signup_password2 = st.text_input("Confirm Password",
-                                         type="password",
-                                         key="signup_password2")
-
-        if st.button("Create Account",
-                     use_container_width=True,
-                     type="primary"):
-            if signup_username and signup_password and signup_password2:
-                if len(signup_username) < 3:
-                    st.error("Username must be at least 3 characters")
-                elif len(signup_password) < 6:
-                    st.error("Password must be at least 6 characters")
-                elif signup_password != signup_password2:
-                    st.error("Passwords don't match")
-                else:
-                    success, message = create_user(signup_username,
-                                                   signup_password)
+            if st.button("Login", use_container_width=True, type="primary"):
+                if login_username and login_password:
+                    success, user_id = verify_user(login_username,
+                                                   login_password)
                     if success:
-                        st.success(f"✅ {message}")
-                        st.info("You can now login with your credentials!")
+                        ss.logged_in = True
+                        ss.username = login_username
+                        ss.user_id = user_id
+                        st.success(f"✅ Welcome back, {login_username}!")
+                        time.sleep(0.5)
+                        st.rerun()
                     else:
-                        st.error(f"❌ {message}")
-            else:
-                st.warning("Please fill in all fields")
+                        st.error("❌ Invalid username or password")
+                else:
+                    st.warning("Please enter both username and password")
 
-    st.sidebar.markdown("---")
-    st.sidebar.caption("🔒 Your data is private and secure")
-    # Stop here if not logged in
-    st.stop()
+        with tab2:
+            st.caption("🔒 Privacy: We don't collect emails or personal info.")
+
+            signup_username = st.text_input("Choose Username",
+                                            key="signup_username")
+            signup_password = st.text_input("Choose Password (min 6 chars)",
+                                            type="password",
+                                            key="signup_password")
+            signup_password2 = st.text_input("Confirm Password",
+                                             type="password",
+                                             key="signup_password2")
+
+            if st.button("Create Account",
+                         use_container_width=True,
+                         type="primary"):
+                if signup_username and signup_password and signup_password2:
+                    if len(signup_username) < 3:
+                        st.error("Username must be at least 3 characters")
+                    elif len(signup_password) < 6:
+                        st.error("Password must be at least 6 characters")
+                    elif signup_password != signup_password2:
+                        st.error("Passwords don't match")
+                    else:
+                        success, message = create_user(signup_username,
+                                                       signup_password)
+                        if success:
+                            st.success(f"✅ {message}")
+                            st.info("You can now login with your credentials!")
+                        else:
+                            st.error(f"❌ {message}")
+                else:
+                    st.warning("Please fill in all fields")
+
+        st.markdown("---")
 
 # ────────────── LOGGED IN USER SECTION ──────────────
-st.sidebar.success(f"👤 Logged in as: **{ss.username}**")
-if st.sidebar.button("🚪 Logout", use_container_width=True):
-    # Clear all user data
-    ss.logged_in = False
-    ss.username = None
-    ss.user_id = None
-    ss.chat_messages = []
-    ss.vehicle = None
-    ss.conversation_started = False
-    ss.current_conversation_id = None
-    st.success("Logged out successfully!")
-    time.sleep(0.5)
-    st.rerun()
+else:
+    st.sidebar.success(f"👤 Logged in as: **{ss.username}**")
+    if st.sidebar.button("🚪 Logout", use_container_width=True):
+        # Clear all user data
+        ss.logged_in = False
+        ss.username = None
+        ss.user_id = None
+        ss.chat_messages = []
+        ss.vehicle = None
+        ss.conversation_started = False
+        ss.current_conversation_id = None
+        st.success("Logged out successfully!")
+        time.sleep(0.5)
+        st.rerun()
 
-st.sidebar.markdown("---")
+    st.sidebar.markdown("---")
+
+# ← NOTICE: No st.stop() here! Everyone can continue using the app
 
 
 def _norm(s: str) -> str:
@@ -1467,11 +1475,22 @@ elif page == "📊 Chat History":
     st.markdown("## 💬 Chat History")
 
     if not ss.get("user_id"):
-        st.warning("Please login to view chat history")
+        st.info("💾 **Chat history is only saved for registered users.**")
+        st.markdown("""
+        Your current conversation works perfectly and is private to your browser session, 
+        but it will be lost when you close the tab.
+        
+        **Create a free account to:**
+        ✅ Save conversations permanently  
+        ✅ Access them from any device  
+        ✅ Resume chats anytime  
+        
+        👈 Use the "Save Your Chats" option in the sidebar to get started!
+        """)
         st.stop()
 
+    # Code for LOGGED-IN users below:
     try:
-        # Get only THIS user's conversations
         conversations = get_user_conversations(ss.user_id)
 
         if not conversations:
