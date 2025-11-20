@@ -13,7 +13,7 @@ import re
 import base64, pathlib
 from glob import glob
 from datetime import datetime, date
-
+import uuid
 import streamlit as st
 from openai import OpenAI
 import streamlit.components.v1 as components
@@ -111,17 +111,63 @@ ss.setdefault("current_issue", None)
 ss.setdefault("show_repair_options", False)
 ss.setdefault("csv_match_found", False)
 ss.setdefault("is_admin", False)
-ss.setdefault("images_today", 0)
+
+
+# Per-user image counter system
+def _load_user_image_counter(user_id: str = None):
+    """Load image count for specific user or anonymous session"""
+    key = user_id or "anonymous"
+    try:
+        with open("image_counters.json", "r") as f:
+            data = json.load(f)
+            today = date.today().isoformat()
+            user_data = data.get(key, {})
+            if user_data.get("date") == today:
+                return user_data.get("count", 0)
+    except FileNotFoundError:
+        pass
+    return 0
+
+
+def _save_user_image_counter(count: int, user_id: str = None):
+    """Save image count for specific user or anonymous session"""
+    key = user_id or "anonymous"
+    try:
+        try:
+            with open("image_counters.json", "r") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            data = {}
+
+        data[key] = {"date": date.today().isoformat(), "count": count}
+
+        with open("image_counters.json", "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception:
+        pass
+
+
+ss.setdefault("logged_in", False)
+ss.setdefault("username", None)
+ss.setdefault("user_id", None)
+
+# Initialize with user-specific counter (AFTER user_id is set)
+ss.setdefault("images_today", _load_user_image_counter(ss.get("user_id")))
 ss.setdefault("image_counter_day", date.today().isoformat())
+
+# Check if day changed and reset
+if ss.image_counter_day != date.today().isoformat():
+    ss.image_counter_day = date.today().isoformat()
+    ss.images_today = 0
+    _save_user_image_counter(0, ss.get("user_id"))
+
 ss.setdefault("is_premium", False)
 ss.setdefault("processing_query", False)
 ss.setdefault("scroll_needed", False)
 ss.setdefault("current_conversation_id", None)
 ss.setdefault("obd_codes", {})  # NEW: merged OBD code dict
 ss.setdefault("last_detected_codes", [])  # NEW: last codes found in user text
-ss.setdefault("logged_in", False)
-ss.setdefault("username", None)
-ss.setdefault("user_id", None)
+ss.setdefault("mot_history", [])  # MOT test history
 
 if ss.api_counter_day != date.today().isoformat():
     ss.api_counter_day = date.today().isoformat()
@@ -1049,6 +1095,13 @@ def ask_ai(user_text: str, csv_context: str | None, codes_context: str | None):
             f"{(v.get('model','') or '').title()} {str(v.get('yearOfManufacture') or '')}, "
             f"{str(v.get('fuelType') or '')}, Engine: {str(v.get('engineCapacity') or '')}cc]"
         )
+
+        # ADD MOT HISTORY TO CONTEXT
+        if ss.mot_history:
+            mot_summary = format_mot_history(ss.mot_history, max_tests=3)
+            if mot_summary:
+                note += f"\n\n[MOT History - Last 3 Tests]\n{mot_summary}"
+
         comm = top_reddit_insight_blob(v.get('make', ''), v.get('model', ''))
         if comm:
             note += f"\n\n[Community Insights]\n{comm}"
@@ -1204,6 +1257,145 @@ def _dvla_lookup_cached(vrm: str, dvla_key: str) -> dict | None:
     except Exception as e:
         st.sidebar.caption(f"DVLA error: {e}")
     return None
+
+
+# ───────────────────────── MOT HISTORY HELPERS ─────────────────────────
+def get_mot_history(vrm: str) -> list:
+    """Get MOT test history for a vehicle"""
+    mot_key = os.environ.get("MOT_API_KEY", "")
+    if not mot_key:
+        return []
+
+    token = _get_mot_access_token()
+    if not token:
+        return []
+
+    try:
+        headers = {
+            "x-api-key": mot_key,
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json"
+        }
+        r = requests.get(
+            f"https://history.mot.api.gov.uk/v1/trade/vehicles/registration/{vrm}",
+            headers=headers,
+            timeout=12)
+
+        if r.ok:
+            data = r.json()
+            if isinstance(data, list) and data:
+                vehicle_data = data[0] or {}
+            elif isinstance(data, dict):
+                vehicle_data = data
+            else:
+                return []
+
+            mot_tests = vehicle_data.get("motTests", [])
+            # Get last 5 tests (roughly 3-5 years)
+            return mot_tests[:5] if mot_tests else []
+        else:
+            return []
+    except Exception:
+        return []
+
+
+def format_mot_history(mot_tests: list, max_tests: int = 3) -> str:
+    """Format MOT history into readable text for AI context"""
+    if not mot_tests:
+        return ""
+
+    summary = []
+    for test in mot_tests[:max_tests]:
+        completed_date = test.get("completedDate", "Unknown date")
+        test_result = test.get("testResult", "Unknown")
+        odometer = test.get("odometerValue", "")
+
+        # Get failures and advisories
+        rfr_and_comments = test.get("rfrAndComments", [])
+        failures = [
+            item["text"] for item in rfr_and_comments
+            if item.get("type") == "FAIL"
+        ]
+        advisories = [
+            item["text"] for item in rfr_and_comments
+            if item.get("type") == "ADVISORY"
+        ]
+
+        test_info = f"- {completed_date[:10]}: {test_result}"
+        if odometer:
+            try:
+                odometer_int = int(odometer)
+                test_info += f" ({odometer_int:,} miles)"
+            except (ValueError, TypeError):
+                test_info += f" ({odometer} miles)"
+
+        if failures:
+            test_info += f"\n  Failures: {'; '.join(failures[:3])}"
+        if advisories:
+            test_info += f"\n  Advisories: {'; '.join(advisories[:3])}"
+
+        summary.append(test_info)
+
+    return "\n".join(summary) if summary else ""
+
+
+def render_mot_history_card(mot_tests: list) -> str:
+    """Render MOT history as HTML card"""
+    if not mot_tests:
+        return ""
+
+    html_parts = ["<div class='obd-card' style='margin:12px 0'>"]
+    html_parts.append("<strong>📋 Recent MOT History</strong><br><br>")
+
+    for i, test in enumerate(mot_tests[:3]):
+        completed_date = test.get("completedDate", "Unknown")[:10]
+        test_result = test.get("testResult", "Unknown")
+        odometer = test.get("odometerValue", "")
+
+        # Result emoji
+        emoji = "✅" if test_result == "PASSED" else "❌"
+
+        html_parts.append(
+            f"<strong>{emoji} {completed_date}</strong> - {test_result}")
+        if odometer:
+            try:
+                odometer_int = int(odometer)
+                html_parts.append(f" ({odometer_int:,} miles)")
+            except (ValueError, TypeError):
+                html_parts.append(f" ({odometer} miles)")
+        html_parts.append("<br>")
+
+        # Get issues
+        rfr_and_comments = test.get("rfrAndComments", [])
+        failures = [
+            item["text"] for item in rfr_and_comments
+            if item.get("type") == "FAIL"
+        ]
+        advisories = [
+            item["text"] for item in rfr_and_comments
+            if item.get("type") == "ADVISORY"
+        ]
+
+        if failures:
+            html_parts.append(
+                f"<span style='color:#ff6b6b'>⚠️ Failures:</span><br>")
+            for fail in failures[:3]:
+                html_parts.append(f"  • {html.escape(fail)}<br>")
+
+        if advisories:
+            html_parts.append(
+                f"<span style='color:#ffa94d'>ℹ️ Advisories:</span><br>")
+            for adv in advisories[:3]:
+                html_parts.append(f"  • {html.escape(adv)}<br>")
+
+        if i < min(len(mot_tests), 3) - 1:
+            html_parts.append("<br>")
+
+    html_parts.append("</div>")
+    return "".join(html_parts)
+
+
+# ───────────────────────── UI helpers ─────────────────────────
 
 
 def vehicle_lookup(reg_number: str) -> dict | None:
@@ -1412,6 +1604,7 @@ page = st.sidebar.selectbox("Choose a page",
 if st.sidebar.button("🔄 New Conversation"):
     ss.chat_messages = []
     ss.vehicle = None
+    ss.mot_history = []
     ss.conversation_started = False
     ss.show_repair_options = False
     ss.csv_match_found = False
@@ -1441,6 +1634,10 @@ if ss.vehicle:
 
 st.sidebar.markdown("---")
 st.sidebar.caption(f"API Calls: {ss.api_calls_today}/100")
+
+# Reload from file to show accurate count
+if not ss.get("is_premium", False):
+    ss.images_today = _load_user_image_counter(ss.get("user_id"))
 
 if ss.get("is_premium", False):
     sidebar_images_text = "📸 Images: ∞ (Premium)"
@@ -1614,6 +1811,10 @@ else:  # 💬 Chat with OBDly
                                                                "").upper())
                         if v:
                             ss.vehicle = v
+                            # FETCH MOT HISTORY
+                            mot_tests = get_mot_history(reg.strip().replace(
+                                " ", "").upper())
+                            ss.mot_history = mot_tests
                             make = (v.get('make') or '').title()
                             model = (v.get('model') or '').title()
                             year = str(v.get('yearOfManufacture') or '')
@@ -1744,6 +1945,21 @@ else:  # 💬 Chat with OBDly
                             "timestamp":
                             datetime.now().strftime("%H:%M")
                         })
+
+                        # ADD MOT HISTORY CARD
+                        if ss.mot_history:
+                            mot_card = render_mot_history_card(ss.mot_history)
+                            if mot_card:
+                                ss.chat_messages.append({
+                                    "role":
+                                    "assistant",
+                                    "content":
+                                    mot_card,
+                                    "type":
+                                    "system",
+                                    "timestamp":
+                                    datetime.now().strftime("%H:%M")
+                                })
                         follow_up = f"Great! I've loaded the details for your {make} {model}. What can I help you with? Any issues or questions about this vehicle?"
                         ss.chat_messages.append({
                             "role":
@@ -1965,6 +2181,8 @@ else:  # 💬 Chat with OBDly
                                 if not ss.get("is_premium", False):
                                     ss.images_today = ss.get(
                                         "images_today", 0) + 1
+                                    _save_user_image_counter(
+                                        ss.images_today, ss.get("user_id"))
                                 analysis = analyze_car_image(
                                     uploaded_file, context)
                                 log_image_analysis(uploaded_file.name,
